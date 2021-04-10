@@ -1,4 +1,8 @@
+import logging
 import paramiko
+import sys
+
+LOGGER = None
 
 
 def import_helper(name: str, attr: str):
@@ -256,9 +260,23 @@ class Config:
         return Config(logger, nodes, planes, services, benchmark)
 
     @classmethod
-    def load(cls, path: str, logger):
-        logger.info(f'Loading config: {path}')
-        import yaml
-        with open(path) as f:
-            context = yaml.load(f, Loader=yaml.FullLoader)
+    def load(cls, name: str, context: dict):
+        logger = cls._init_logger()
+        logger.info(f'Loading config: {name}')
         return Config.parse(context, logger)
+
+    @classmethod
+    def _init_logger(cls):
+        global LOGGER
+        if LOGGER is not None:
+            return LOGGER
+
+        handler = logging.StreamHandler(sys.stdout)
+        formatter = logging.Formatter(
+            '[ %(levelname)s ] %(asctime)s -  %(message)s')
+        handler.setFormatter(formatter)
+
+        LOGGER = logging.getLogger('compose')
+        LOGGER.setLevel(logging.DEBUG)
+        LOGGER.addHandler(handler)
+        return LOGGER

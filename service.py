@@ -113,13 +113,16 @@ def benchmark_cluster(config: Config):
 
 def shutdown_cluster(config: Config):
     shutdown_cluster_services(config)
-    # skipping doing shutdown itself
+
+    with open(f'./services/kubernetes/compose-common.sh') as f:
+        script = ''.join(f.readlines())
+    config.command_all(script)
 
 
 def solve(config: Config):
     config.planes.primary = select_kubernetes_plane(config)
     ensure_root_permission(config)
     eusure_dependencies(config)
-    # compose_cluster(config)
+    compose_cluster(config)
     benchmark_cluster(config)
-    # shutdown_cluster(config)
+    shutdown_cluster(config)

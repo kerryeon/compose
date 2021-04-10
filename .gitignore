@@ -141,6 +141,7 @@ cython_debug/
 /.vscode
 
 # Outputs
+/batch.yaml
 /config.yaml
 /outputs
 /tmp
