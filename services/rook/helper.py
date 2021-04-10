@@ -43,8 +43,9 @@ def download_files(config: Config, version: str) -> list:
 
 
 def modify(config: Config, service: Service):
-    value = service.desc.get('osdsPerDevice')
-    value = int(value) if value is not None else 1
+    osds_per_device = service.desc.get('osdsPerDevice')
+    osds_per_device = int(osds_per_device) \
+        if osds_per_device is not None else 1
     metadata = service.desc.get('metadata')
 
     num_nodes = min(3, len(config.nodes.all()))
@@ -66,11 +67,13 @@ def modify(config: Config, service: Service):
         storage = context['spec']['storage']
         if 'config' not in storage or storage['config'] is None:
             storage['config'] = {}
-        storage['config']['osdsPerDevice'] = str(value)
+        storage['config']['osdsPerDevice'] = str(osds_per_device)
 
         storage.setdefault('nodes', [])
         for node in config.nodes.all():
-            storge_config = {}
+            storge_config = {
+                # 'osdsPerDevice': str(osds_per_device),
+            }
             storge_devices = []
             for name, volume in config.nodes.volumes(node).items():
                 if volume.type == metadata:
@@ -107,7 +110,7 @@ def upload_files(config: Config) -> list:
 def apply(config: Config, files: list):
     script = ''
     for file in files:
-        script += f'\nkubectl apply -f {file}'
+        script += f'\nkubectl create -f {file}'
         script += '\nsleep 1'
     script += '\nkubectl -n rook-ceph rollout status deploy/rook-ceph-tools'
     script += '\nkubectl patch storageclass rook-ceph-block -p \'{"metadata":{"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}\''
@@ -119,3 +122,47 @@ def compose(config: Config, service: Service):
     modify(config, service)
     files = upload_files(config)
     apply(config, files)
+
+
+def shutdown(config: Config, service: Service):
+    files = [f'{DESTINATION}/{f.split("/")[-1]}' for f in reversed(FILES)]
+    script = ''
+    for file in files:
+        script += f'\nkubectl delete -f {file}'
+        script += '\nsleep 1'
+    config.command_master(script)
+
+    with open(f'./services/kubernetes/shutdown-volumes.sh') as f:
+        script = '\n' + ''.join(f.readlines())
+    config.command_all(script,
+                       volumes=config.volumes_str(config.nodes.master))
+
+
+def benchmark(config: Config, name: str):
+    from datetime import date
+    url = 'https://raw.githubusercontent.com/kerryeon/rook-bench/master/rook-bench.yaml'
+
+    time = date.today().strftime('%d/%m/%Y-%H:%M:%S')
+    filename = f'{name}-{time}.tar'
+
+    # play
+    config.command_master(
+        quiet=True,
+        script=''
+        f'kubectl create -f {url}'
+        '\nsleep 1'
+        '\nexport pod_name=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" | grep "vdbench-")'
+        '\nkubectl wait --for=condition=ready --timeout=24h pod ${pod_name}'
+        '\nkubectl exec ${pod_name} -- ./vdbench -f script.ini -o output >/dev/null'
+        f'\nkubectl cp ${{pod_name}}:output {DESTINATION}/{time}'
+        f'\ntar xf {DESTINATION}/{filename} {DESTINATION}/{time}'
+    )
+
+    # take the result
+    os.makedirs('./outputs', exist_ok=True)
+    config.download_master({
+        f'{DESTINATION}/{filename}': f'outputs/{filename}',
+    })
+
+    # shutdown
+    config.command_master(f'kubectl delete -f {url}')

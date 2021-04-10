@@ -1,10 +1,6 @@
 from context import *
 
 
-def _volumes_to_str(config: Config, name: str) -> str:
-    return ' '.join(f'/dev/{v}' for v in config.volumes(name).keys())
-
-
 def select_kubernetes_plane(config: Config) -> str:
     return 'data'
 
@@ -54,12 +50,14 @@ def compose_cluster_master(config: Config):
     # find composing script
     with open(f'./services/kubernetes/compose-common.sh') as f:
         script = ''.join(f.readlines())
+    with open(f'./services/kubernetes/shutdown-volumes.sh') as f:
+        script += '\n' + ''.join(f.readlines())
     with open(f'./services/kubernetes/compose-master.sh') as f:
         script += '\n' + ''.join(f.readlines())
 
     config.logger.info(f'Initializing cluster: master ({config.nodes.master})')
     output = config.command_master(script, node_ip=config.master_node_ip(),
-                                   volumes=_volumes_to_str(config, config.nodes.master))
+                                   volumes=config.volumes_str(config.nodes.master))
 
     # parse join command
     for idx, line in enumerate(output):
@@ -73,12 +71,14 @@ def compose_cluster_workers(config: Config, join_command: str):
     # find composing script
     with open(f'./services/kubernetes/compose-common.sh') as f:
         script = ''.join(f.readlines())
+    with open(f'./services/kubernetes/shutdown-volumes.sh') as f:
+        script += '\n' + ''.join(f.readlines())
     script += '\n' + join_command + '\n'
 
     for name in config.nodes.workers():
         config.logger.info(f'Initializing cluster: worker ({name})')
         config.command(name, script, node_ip=config.node_ip(name),
-                       volumes=_volumes_to_str(config, name))
+                       volumes=config.volumes_str(name))
 
 
 def compose_cluster_services(config: Config):
@@ -96,9 +96,30 @@ def compose_cluster(config: Config, reset: bool = True, services: bool = True):
         compose_cluster_services(config)
 
 
+def shutdown_cluster_services(config: Config):
+    for name, service in config.services.all():
+        config.logger.info(f'Doing shutdown service: {name}')
+        composer = import_helper(name, 'shutdown')
+        if composer is not None:
+            composer(config, service)
+
+
+def benchmark_cluster(config: Config):
+    name = config.benchmark
+    config.logger.info(f'Doing benchmark: {name}')
+    benchmarker = import_helper(name, 'benchmark')
+    benchmarker(config, name)
+
+
+def shutdown_cluster(config: Config):
+    shutdown_cluster_services(config)
+    # skipping doing shutdown itself
+
+
 def solve(config: Config):
     config.planes.primary = select_kubernetes_plane(config)
     ensure_root_permission(config)
     eusure_dependencies(config)
     # compose_cluster(config)
-    compose_cluster(config, reset=True, services=True)
+    benchmark_cluster(config)
+    # shutdown_cluster(config)

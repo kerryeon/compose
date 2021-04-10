@@ -1,4 +1,3 @@
-import collections
 import paramiko
 
 
@@ -36,7 +35,7 @@ class Node:
         return f'{plane}.{self.id}'
 
     def command(self, logger, plane: str, script: str,
-                env: dict, timeout: bool = False):
+                env: dict, timeout: bool, quiet: bool):
         env = '\n'.join(f'export {k}="{v}"' for k, v in env.items())
         script = env + '\n' + script.replace('\\\n', ' ')
         timeout = 15 if timeout else None
@@ -50,8 +49,9 @@ class Node:
         stdin, stdout, stderr = client.exec_command(
             script, get_pty=True, timeout=timeout)
         output = stdout.readlines()
-        for line in output:
-            logger.debug(line[:-1])
+        if not quiet:
+            for line in output:
+                logger.debug(line[:-1])
         for line in stderr.readlines():
             logger.error(line[:-1])
         stdin.close()
@@ -69,6 +69,20 @@ class Node:
         for src, dst in files.items():
             logger.debug(f'Upload file: {src} --> {dst}')
             ftp_client.put(src, dst)
+        ftp_client.close()
+        client.close()
+
+    def download(self, logger, plane: str, files: dict):
+        client = paramiko.SSHClient()
+        client.load_system_host_keys()
+        client.connect(self.node_ip(plane),
+                       username=self.username,
+                       password=self.password)
+
+        ftp_client = client.open_sftp()
+        for dst, src in files.items():
+            logger.debug(f'Upload file: {src} --> {dst}')
+            ftp_client.get(dst, src)
         ftp_client.close()
         client.close()
 
@@ -105,11 +119,15 @@ class Nodes:
         return self.data[name].volumes
 
     def command(self, logger, name: str, plane: str, script: str,
-                env: dict, timeout: bool = False):
-        return self.data[name].command(logger, plane, script, env, timeout)
+                env: dict, timeout: bool, quiet: bool):
+        return self.data[name].command(logger, plane, script, env,
+                                       timeout, quiet)
 
     def upload(self, logger, name: str, plane: str, files: dict):
         return self.data[name].upload(logger, plane, files)
+
+    def download(self, logger, name: str, plane: str, files: dict):
+        return self.data[name].download(logger, plane, files)
 
     @classmethod
     def parse(cls, context: dict):
@@ -197,25 +215,37 @@ class Config:
     def volumes(self, name: str) -> dict:
         return self.nodes.volumes(name)
 
+    def volumes_str(self, name: str) -> str:
+        return ' '.join(f'/dev/{v}' for v in self.volumes(name).keys())
+
     def collect_dependencies(self) -> set:
         default = {'docker', 'kubernetes', self.benchmark}
         result = default.union(self.services.collect_dependencies())
         return result
 
-    def command(self, name: str, script: str, timeout: bool = False, **env):
-        return self.nodes.command(self.logger, name, self.planes.maintain, script, env, timeout)
+    def command(self, name: str, script: str, timeout: bool = False, quiet: bool = False, **env):
+        return self.nodes.command(self.logger, name,
+                                  self.planes.maintain, script, env,
+                                  timeout, quiet)
 
-    def command_master(self, script: str, timeout: bool = False, **env):
+    def command_master(self, script: str, timeout: bool = False, quiet: bool = False, **env):
         env = {k: str(v) for k, v in env.items()}
-        return self.nodes.command(self.logger, self.nodes.master, self.planes.maintain, script, env, timeout)
+        return self.nodes.command(self.logger, self.nodes.master,
+                                  self.planes.maintain, script, env,
+                                  timeout, quiet)
 
-    def command_all(self, script: str, timeout: bool = False, **env):
+    def command_all(self, script: str, timeout: bool = False, quiet: bool = False, **env):
         env = {k: str(v) for k, v in env.items()}
-        return [(worker, self.nodes.command(self.logger, worker, self.planes.maintain, script, env, timeout))
+        return [(worker, self.nodes.command(self.logger, worker,
+                                            self.planes.maintain, script, env,
+                                            timeout, quiet))
                 for worker in self.nodes.data]
 
     def upload_master(self, files: dict):
         return self.nodes.upload(self.logger, self.nodes.master, self.planes.maintain, files)
+
+    def download_master(self, files: dict):
+        return self.nodes.download(self.logger, self.nodes.master, self.planes.maintain, files)
 
     @classmethod
     def parse(cls, context: dict, logger):
