@@ -96,6 +96,13 @@ def compose_cluster(config: Config, reset: bool = True, services: bool = True):
         compose_cluster_services(config)
 
 
+def benchmark_cluster(config: Config):
+    name = config.benchmark
+    config.logger.info(f'Doing benchmark: {name}')
+    benchmarker = import_helper(name, 'benchmark')
+    benchmarker(config, name)
+
+
 def shutdown_cluster_services(config: Config):
     for name, service in config.services.all():
         config.logger.info(f'Doing shutdown service: {name}')
@@ -104,16 +111,10 @@ def shutdown_cluster_services(config: Config):
             composer(config, service)
 
 
-def benchmark_cluster(config: Config):
-    name = config.benchmark
-    config.logger.info(f'Doing benchmark: {name}')
-    benchmarker = import_helper(name, 'benchmark')
-    benchmarker(config, name)
-
-
 def shutdown_cluster(config: Config):
     shutdown_cluster_services(config)
 
+    config.logger.info(f'Doing shutdown cluster')
     with open(f'./services/kubernetes/compose-common.sh') as f:
         script = ''.join(f.readlines())
     config.command_all(script)
