@@ -1,17 +1,7 @@
 #!/bin/bash
 
-# Reset k8s
-sudo kubeadm reset -f
-sudo rm -rf /etc/cni/net.d
-sudo ipvsadm --clear
-
-# Cleanup Rook configuration
-sudo rm -rf /var/lib/rook
-sudo dmsetup remove_all
-sudo wipefs --all /dev/nvme0n1 /dev/nvme1n1
-
 # Initialize cluster with D-plane
-sudo kubeadm init --apiserver-advertise-address $K8S_IP
+sudo kubeadm init --apiserver-advertise-address $node_ip
 
 rm -r $HOME/.kube
 mkdir -p $HOME/.kube
@@ -20,3 +10,13 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
 # Schedule master node (=control plane node)
 kubectl taint nodes --all node-role.kubernetes.io/master-
+
+# Apply Network Policy (CNI)
+kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
+
+# Remove RBAC
+kubectl create clusterrolebinding permissive-binding \
+    --clusterrole=cluster-admin \
+    --user=admin \
+    --user=kubelet \
+    --group=system:serviceaccounts

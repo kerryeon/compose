@@ -21,7 +21,7 @@ def main():
     config = Config.load('./config.yaml', init_logger())
 
     import service
-    service.install_core(config)
+    service.solve(config)
 
 
 if __name__ == '__main__':

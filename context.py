@@ -1,4 +1,13 @@
+import collections
 import paramiko
+
+
+def import_helper(name: str, attr: str):
+    try:
+        module = __import__(f'services.{name}.helper', fromlist=[attr])
+        return getattr(module, attr)
+    except:
+        return None
 
 
 class Volume:
@@ -16,7 +25,7 @@ class Volume:
 class Node:
     def __init__(self, id: int, name: str,
                  username: str, password: str,
-                 volumes: list):
+                 volumes: dict):
         self.id = id
         self.name = name
         self.username = username
@@ -26,7 +35,12 @@ class Node:
     def node_ip(self, plane: str) -> str:
         return f'{plane}.{self.id}'
 
-    def command(self, logger, plane: str, script: str, env: dict):
+    def command(self, logger, plane: str, script: str,
+                env: dict, timeout: bool = False):
+        env = '\n'.join(f'export {k}={v}' for k, v in env.items())
+        script = env + '\n' + script.replace('\\\n', ' ')
+        timeout = 15 if timeout else None
+
         client = paramiko.SSHClient()
         client.load_system_host_keys()
         client.connect(self.node_ip(plane),
@@ -34,22 +48,29 @@ class Node:
                        password=self.password)
 
         stdin, stdout, stderr = client.exec_command(
-            script, get_pty=True, environment=env)
-        output = []
-        line = ''
-        for out in stdout.readline():
-            if not out:
-                break
-            line += out
-            if line.endswith('\n'):
-                line = line[:-1]
-                logger.debug(line)
-                output.append(line)
+            script, get_pty=True, timeout=timeout)
+        output = stdout.readlines()
+        for line in output:
+            logger.debug(line[:-1])
         for line in stderr.readlines():
-            logger.error(line)
+            logger.error(line[:-1])
         stdin.close()
         client.close()
         return output
+
+    def upload(self, logger, plane: str, files: dict):
+        client = paramiko.SSHClient()
+        client.load_system_host_keys()
+        client.connect(self.node_ip(plane),
+                       username=self.username,
+                       password=self.password)
+
+        ftp_client = client.open_sftp()
+        for src, dst in files.items():
+            logger.debug(f'Upload file: {src} --> {dst}')
+            ftp_client.put(src, dst)
+        ftp_client.close()
+        client.close()
 
     @classmethod
     def parse(cls, context: dict):
@@ -68,11 +89,27 @@ class Nodes:
         self.master = master
         self.data = data
 
-    def command(self, logger, name: str, plane: str, script: str, env: dict):
-        return self.data[name].command(logger, plane, script, env)
+    def node_ip(self, name: str, plane: str) -> str:
+        return self.data[name].node_ip(plane)
+
+    def master_node_ip(self, plane: str) -> str:
+        return self.node_ip(self.master, plane)
+
+    def all(self) -> list:
+        return list(self.data.keys())
 
     def workers(self) -> list:
         return [n for n in self.data if n != self.master]
+
+    def volumes(self, name: str) -> dict:
+        return self.data[name].volumes
+
+    def command(self, logger, name: str, plane: str, script: str,
+                env: dict, timeout: bool = False):
+        return self.data[name].command(logger, plane, script, env, timeout)
+
+    def upload(self, logger, name: str, plane: str, files: dict):
+        return self.data[name].upload(logger, plane, files)
 
     @classmethod
     def parse(cls, context: dict):
@@ -85,10 +122,15 @@ class Nodes:
 class Planes:
     def __init__(self, data: dict):
         self.data = data
+        self.primary = 'maintain'
 
     @property
     def maintain(self) -> str:
         return self.data['maintain']
+
+    @property
+    def primary_value(self) -> str:
+        return self.data[self.primary]
 
     @classmethod
     def parse(cls, context: dict):
@@ -97,23 +139,37 @@ class Planes:
 
 
 class Service:
-    def __init__(self, name: str, version: str):
+    def __init__(self, name: str, version: str, desc: dict):
         self.name = name
         self.version = version
+        self.desc = desc
+
+    def collect_dependencies(self) -> set:
+        collector = import_helper(self.name, 'collect_dependencies')
+        return collector(self) if collector is not None else set()
 
     @classmethod
     def parse(cls, context: dict):
         name = str(context['name'])
         version = str(context['version'])
-        return Service(name, version)
+        desc = context.get('desc')
+        desc = dict(desc) if desc is not None else {}
+        return Service(name, version, desc)
 
 
 class Services:
     def __init__(self, data: dict):
         self.data = data
 
+    def all(self):
+        return self.data.items()
+
     def collect_dependencies(self) -> set:
-        return set(self.data.keys())
+        result = set()
+        for name, service in self.data.items():
+            result.add(name)
+            result = result.union(service.collect_dependencies())
+        return result
 
     @classmethod
     def parse(cls, context: dict):
@@ -122,74 +178,9 @@ class Services:
         return Services(data)
 
 
-class BenchmarkCaseVolumes:
-    def __init__(self, cas: str, metadata: str, osds_per_device: int):
-        self.cas = cas
-        self.metadata = metadata
-        self.osds_per_device = osds_per_device
-
-    def collect_dependencies(self) -> set:
-        result = set()
-        if self.cas is not None:
-            result.add('cas')
-        return result
-
-    @classmethod
-    def parse(cls, context: dict):
-        cas = context.get('cas')
-        cas = str(cas) if cas else None
-        metadata = context.get('metadata')
-        metadata = str(metadata) if metadata else None
-        osds_per_device = context.get('osdsPerDevice')
-        osds_per_device = int(osds_per_device) if osds_per_device else 1
-        return BenchmarkCaseVolumes(cas, metadata, osds_per_device)
-
-
-class BenchmarkCase:
-    def __init__(self, nodes: list, volumes: BenchmarkCaseVolumes):
-        self.nodes = nodes
-        self.volumes = volumes
-
-    def collect_dependencies(self) -> set:
-        result = set()
-        if self.volumes is not None:
-            result.add('rook')
-            result = result.union(self.volumes.collect_dependencies())
-        return result
-
-    @classmethod
-    def parse(cls, context: dict):
-        nodes = [str(n) for n in context['nodes']]
-        volumes = context['volumes']
-        volumes = BenchmarkCaseVolumes.parse(volumes) \
-            if volumes is not None else volumes
-        return BenchmarkCase(nodes, volumes)
-
-
-class Benchmark:
-    def __init__(self, name: str, cases: list, output: str):
-        self.name = name
-        self.cases = cases
-        self.output = output
-
-    def collect_dependencies(self) -> set:
-        result = {self.name}
-        for case in self.cases:
-            result = result.union(case.collect_dependencies())
-        return result
-
-    @classmethod
-    def parse(cls, context: dict):
-        name = context['name']
-        cases = [BenchmarkCase.parse(c) for c in context['cases']]
-        output = context.get('output')
-        output = str(output) if output is not None else './output'
-        return Benchmark(name, cases, output)
-
-
 class Config:
     def __init__(self, logger, nodes: Nodes, planes: Planes,
-                 services: Services, benchmark: Benchmark):
+                 services: Services, benchmark: str):
         self.nodes = nodes
         self.planes = planes
         self.services = services
@@ -197,35 +188,41 @@ class Config:
 
         self.logger = logger
 
+    def master_node_ip(self):
+        return self.nodes.master_node_ip(self.planes.primary_value)
+
+    def node_ip(self, name: str):
+        return self.nodes.node_ip(name, self.planes.primary_value)
+
+    def volumes(self, name: str) -> dict:
+        return self.nodes.volumes(name)
+
     def collect_dependencies(self) -> set:
-        result = {'docker', 'kubernetes'}
-        result = result.union(self.services.collect_dependencies())
-        result = result.union(self.benchmark.collect_dependencies())
+        default = {'docker', 'kubernetes', self.benchmark}
+        result = default.union(self.services.collect_dependencies())
         return result
 
-    def command(self, name: str, script: str, **env):
-        return self.nodes.command(self.logger, name, self.planes.maintain, script, env)
+    def command(self, name: str, script: str, timeout: bool = False, **env):
+        return self.nodes.command(self.logger, name, self.planes.maintain, script, env, timeout)
 
-    def command_master(self, script: str, **env):
+    def command_master(self, script: str, timeout: bool = False, **env):
         env = {k: str(v) for k, v in env.items()}
-        return self.nodes.command(self.logger, self.nodes.master, self.planes.maintain, script, env)
+        return self.nodes.command(self.logger, self.nodes.master, self.planes.maintain, script, env, timeout)
 
-    def command_workers(self, script: str, **env):
+    def command_all(self, script: str, timeout: bool = False, **env):
         env = {k: str(v) for k, v in env.items()}
-        return [(worker, self.nodes.command(self.logger, worker, self.planes.maintain, script, env))
-                for worker in self.nodes.workers()]
-
-    def command_all(self, script: str, **env):
-        env = {k: str(v) for k, v in env.items()}
-        return [(worker, self.nodes.command(self.logger, worker, self.planes.maintain, script, env))
+        return [(worker, self.nodes.command(self.logger, worker, self.planes.maintain, script, env, timeout))
                 for worker in self.nodes.data]
+
+    def upload_master(self, files: dict):
+        return self.nodes.upload(self.logger, self.nodes.master, self.planes.maintain, files)
 
     @classmethod
     def parse(cls, context: dict, logger):
         nodes = Nodes.parse(context['nodes'])
         planes = Planes.parse(context['planes'])
         services = Services.parse(context['services'])
-        benchmark = Benchmark.parse(context['benchmark'])
+        benchmark = str(context['benchmark'])
         return Config(logger, nodes, planes, services, benchmark)
 
     @classmethod
