@@ -11,14 +11,14 @@ def init_logger():
     handler.setFormatter(formatter)
 
     logger = logging.getLogger('compose')
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG)
     logger.addHandler(handler)
     return logger
 
 
 def main():
     from context import Config
-    config = Config.load('config.yaml', init_logger())
+    config = Config.load('./config.yaml', init_logger())
 
     import service
     service.install_core(config)

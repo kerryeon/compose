@@ -35,9 +35,16 @@ class Node:
 
         stdin, stdout, stderr = client.exec_command(
             script, get_pty=True, environment=env)
-        output = stdout.readlines()
-        for line in output:
-            logger.debug(line)
+        output = []
+        line = ''
+        for out in stdout.readline():
+            if not out:
+                break
+            line += out
+            if line.endswith('\n'):
+                line = line[:-1]
+                logger.debug(line)
+                output.append(line)
         for line in stderr.readlines():
             logger.error(line)
         stdin.close()
@@ -191,7 +198,7 @@ class Config:
         self.logger = logger
 
     def collect_dependencies(self) -> set:
-        result = {'kubernetes'}
+        result = {'docker', 'kubernetes'}
         result = result.union(self.services.collect_dependencies())
         result = result.union(self.benchmark.collect_dependencies())
         return result
