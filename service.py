@@ -30,7 +30,7 @@ def eusure_dependency(config: Config, name: str):
     # find installer script
     try:
         with open(f'./services/{name}/install.sh') as f:
-            script = '\n'.join(f.readlines())
+            script = ''.join(f.readlines())
     except FileNotFoundError:
         return
 
@@ -53,9 +53,9 @@ def eusure_dependencies(config: Config):
 def compose_cluster_master(config: Config):
     # find composing script
     with open(f'./services/kubernetes/compose-common.sh') as f:
-        script = '\n'.join(f.readlines())
+        script = ''.join(f.readlines())
     with open(f'./services/kubernetes/compose-master.sh') as f:
-        script += '\n' + '\n'.join(f.readlines())
+        script += '\n' + ''.join(f.readlines())
 
     config.logger.info(f'Initializing cluster: master ({config.nodes.master})')
     output = config.command_master(script, node_ip=config.master_node_ip(),
@@ -72,13 +72,13 @@ def compose_cluster_master(config: Config):
 def compose_cluster_workers(config: Config, join_command: str):
     # find composing script
     with open(f'./services/kubernetes/compose-common.sh') as f:
-        script = '\n'.join(f.readlines())
+        script = ''.join(f.readlines())
     script += '\n' + join_command + '\n'
 
     for name in config.nodes.workers():
         config.logger.info(f'Initializing cluster: worker ({name})')
-        print(config.command(name, script, node_ip=config.node_ip(name),
-                             volumes=_volumes_to_str(config, name)))
+        config.command(name, script, node_ip=config.node_ip(name),
+                       volumes=_volumes_to_str(config, name))
 
 
 def compose_cluster_services(config: Config):
@@ -101,4 +101,4 @@ def solve(config: Config):
     ensure_root_permission(config)
     eusure_dependencies(config)
     # compose_cluster(config)
-    compose_cluster(config, reset=False, services=True)
+    compose_cluster(config, reset=True, services=True)

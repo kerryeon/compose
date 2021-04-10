@@ -37,7 +37,7 @@ class Node:
 
     def command(self, logger, plane: str, script: str,
                 env: dict, timeout: bool = False):
-        env = '\n'.join(f'export {k}={v}' for k, v in env.items())
+        env = '\n'.join(f'export {k}="{v}"' for k, v in env.items())
         script = env + '\n' + script.replace('\\\n', ' ')
         timeout = 15 if timeout else None
 

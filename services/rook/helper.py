@@ -77,7 +77,7 @@ def modify(config: Config, service: Service):
                     storge_config['metadataDevice'] = name
                 else:
                     num_osds += 1
-                    storge_devices.append(name)
+                    storge_devices.append({'name': name})
             storage['nodes'].append({
                 'name': node,
                 'config': storge_config,
@@ -104,10 +104,13 @@ def upload_files(config: Config) -> list:
     return list(files.values())
 
 
-def apply(config: Config, service: Service, files: list):
-    script = 'kubectl apply ' + ' '.join(f'-f {f}'for f in files)
-    script += '\nkubectl patch storageclass rook-ceph-block -p \'{"metadata":{"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}\''
+def apply(config: Config, files: list):
+    script = ''
+    for file in files:
+        script += f'\nkubectl apply -f {file}'
+        script += '\nsleep 1'
     script += '\nkubectl -n rook-ceph rollout status deploy/rook-ceph-tools'
+    script += '\nkubectl patch storageclass rook-ceph-block -p \'{"metadata":{"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}\''
     config.command_master(script)
 
 
@@ -115,4 +118,4 @@ def compose(config: Config, service: Service):
     download_files(config, service.version)
     modify(config, service)
     files = upload_files(config)
-    apply(config, service, files)
+    apply(config, files)
