@@ -8,9 +8,15 @@ import service
 
 def main(path: str):
     with open(path) as f:
-        contexts = yaml.load_all(f, Loader=yaml.SafeLoader)
+        contexts = list(yaml.load_all(f, Loader=yaml.SafeLoader))
+
+    index = 0
     for context in contexts:
-        service.solve(Config.load(path, context))
+        if not isinstance(context, dict):
+            continue
+        service.solve(Config.load(f'[{index}] {path}', context))
+        index += 1
+        print()
 
 
 if __name__ == '__main__':

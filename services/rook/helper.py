@@ -139,11 +139,16 @@ def shutdown(config: Config, service: Service):
 
 
 def benchmark(config: Config, name: str):
-    from datetime import date
+    from datetime import datetime
     url = 'https://raw.githubusercontent.com/kerryeon/rook-bench/master/rook-bench.yaml'
 
-    time = date.today().strftime('%d/%m/%Y-%H:%M:%S')
+    time = datetime.now().strftime('Y%YM%mD%d-%H:%M:%S')
     filename = f'{name}-{time}.tar'
+
+    src_dir = f'{DESTINATION}/{time}'
+    src = f'{DESTINATION}/{filename}'
+    dst_dir = './outputs'
+    dst = f'{dst_dir}/{filename}'
 
     # play
     config.command_master(
@@ -153,16 +158,16 @@ def benchmark(config: Config, name: str):
         '\nsleep 1'
         '\nexport pod_name=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" | grep "vdbench-")'
         '\nkubectl wait --for=condition=ready --timeout=24h pod ${pod_name}'
+        '\nkubectl exec ${pod_name} -- sed -e \'s/600/5/g\' -i script.ini'
         '\nkubectl exec ${pod_name} -- ./vdbench -f script.ini -o output >/dev/null'
-        f'\nkubectl cp ${{pod_name}}:output {DESTINATION}/{time}'
-        f'\ntar xf {DESTINATION}/{filename} {DESTINATION}/{time}'
+        f'\nkubectl cp ${{pod_name}}:output {src_dir}'
+        f'\ntar cf {src} {src_dir}'
     )
 
     # take the result
-    os.makedirs('./outputs', exist_ok=True)
-    config.download_master({
-        f'{DESTINATION}/{filename}': f'outputs/{filename}',
-    })
+    config.logger.info(f'Saving result: {dst}')
+    os.makedirs(dst_dir, exist_ok=True)
+    config.download_master({src: dst})
 
     # shutdown
     config.command_master(f'kubectl delete -f {url}')

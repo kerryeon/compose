@@ -277,6 +277,6 @@ class Config:
         handler.setFormatter(formatter)
 
         LOGGER = logging.getLogger('compose')
-        LOGGER.setLevel(logging.DEBUG)
+        LOGGER.setLevel(logging.INFO)
         LOGGER.addHandler(handler)
         return LOGGER
