@@ -158,7 +158,6 @@ def benchmark(config: Config, name: str):
         '\nsleep 1'
         '\nexport pod_name=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" | grep "vdbench-")'
         '\nkubectl wait --for=condition=ready --timeout=24h pod ${pod_name}'
-        '\nkubectl exec ${pod_name} -- sed -e \'s/600/5/g\' -i script.ini'
         '\nkubectl exec ${pod_name} -- ./vdbench -f script.ini -o output >/dev/null'
         f'\nkubectl cp ${{pod_name}}:output {src_dir}'
         f'\ntar cf {src} {src_dir}'
