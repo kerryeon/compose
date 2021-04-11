@@ -1,3 +1,5 @@
+import os
+
 from context import *
 
 
@@ -97,10 +99,18 @@ def compose_cluster(config: Config, reset: bool = True, services: bool = True):
 
 
 def benchmark_cluster(config: Config):
-    name = config.benchmark
-    config.logger.info(f'Doing benchmark: {name}')
-    benchmarker = import_helper(name, 'benchmark')
+    from datetime import datetime
+    time = datetime.now().strftime('Y%YM%mD%d-%H:%M:%S')
+    name = f'{config.benchmark}-{time}'
+
+    config.logger.info(f'Doing benchmark: {config.benchmark}')
+    benchmarker = import_helper(config.benchmark, 'benchmark')
     benchmarker(config, name)
+
+    # save config (metadata)
+    meta_dir = './outputs/metadata'
+    os.makedirs(meta_dir, exist_ok=True)
+    config.save(f'{meta_dir}/{name}.yaml')
 
 
 def shutdown_cluster_services(config: Config):

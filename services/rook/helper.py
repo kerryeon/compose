@@ -139,13 +139,11 @@ def shutdown(config: Config, service: Service):
 
 
 def benchmark(config: Config, name: str):
-    from datetime import datetime
     url = 'https://raw.githubusercontent.com/kerryeon/rook-bench/master/rook-bench.yaml'
 
-    time = datetime.now().strftime('Y%YM%mD%d-%H:%M:%S')
-    filename = f'{name}-{time}.tar'
+    filename = f'{name}.tar'
 
-    src_dir = f'{DESTINATION}/{time}'
+    src_dir = f'{DESTINATION}/{name}'
     src = f'{DESTINATION}/{filename}'
     dst_dir = './outputs'
     dst = f'{dst_dir}/{filename}'

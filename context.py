@@ -1,6 +1,7 @@
 import logging
 import paramiko
 import sys
+import yaml
 
 LOGGER = None
 
@@ -200,13 +201,15 @@ class Services:
 
 
 class Config:
-    def __init__(self, logger, nodes: Nodes, planes: Planes,
+    def __init__(self, context: dict, logger,
+                 nodes: Nodes, planes: Planes,
                  services: Services, benchmark: str):
         self.nodes = nodes
         self.planes = planes
         self.services = services
         self.benchmark = benchmark
 
+        self._context = context
         self.logger = logger
 
     def master_node_ip(self):
@@ -256,13 +259,18 @@ class Config:
         planes = Planes.parse(context['planes'])
         services = Services.parse(context['services'])
         benchmark = str(context['benchmark'])
-        return Config(logger, nodes, planes, services, benchmark)
+        return Config(context, logger,
+                      nodes, planes, services, benchmark)
 
     @classmethod
     def load(cls, name: str, context: dict):
         logger = cls._init_logger()
         logger.info(f'Loading config: {name}')
         return Config.parse(context, logger)
+
+    def save(self, path: str):
+        with open(path, 'w') as f:
+            yaml.dump(self._context, f, Dumper=yaml.SafeDumper)
 
     @classmethod
     def _init_logger(cls):
