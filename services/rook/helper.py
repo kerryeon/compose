@@ -128,7 +128,7 @@ def shutdown(config: Config, service: Service):
     files = [f'{DESTINATION}/{f.split("/")[-1]}' for f in reversed(FILES)]
     script = ''
     for file in files:
-        script += f'\nkubectl delete -f {file}'
+        script += f'\nkubectl delete -f {file} --timeout=240s'
         script += '\nsleep 1'
     config.command_master(script)
 

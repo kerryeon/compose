@@ -11,12 +11,12 @@ def ensure_root_permission(config: Config):
     config.logger.info(f'Checking root permissions')
     for node in config.nodes.all():
         try:
-            config.command(node, f'sudo true', timeout=True)
+            config.command(node, f'sudo true', timeout=30)
         except socket.timeout:
             config.logger.error(
                 f'Failed to access root permission: {node}')
             config.logger.error(
-                f'Please make sure to "sudo" without password.')
+                f'Please make sure that you can access to "sudo" without password.')
             config.logger.error(
                 f'Note: https://askubuntu.com/a/340669')
             exit(1)

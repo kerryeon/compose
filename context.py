@@ -39,10 +39,9 @@ class Node:
         return f'{plane}.{self.id}'
 
     def command(self, logger, plane: str, script: str,
-                env: dict, timeout: bool, quiet: bool):
+                env: dict, timeout: int, quiet: bool):
         env = '\n'.join(f'export {k}="{v}"' for k, v in env.items())
         script = env + '\n' + script.replace('\\\n', ' ')
-        timeout = 15 if timeout else None
 
         client = paramiko.SSHClient()
         client.load_system_host_keys()
@@ -123,7 +122,7 @@ class Nodes:
         return self.data[name].volumes
 
     def command(self, logger, name: str, plane: str, script: str,
-                env: dict, timeout: bool, quiet: bool):
+                env: dict, timeout: int, quiet: bool):
         return self.data[name].command(logger, plane, script, env,
                                        timeout, quiet)
 
@@ -227,18 +226,18 @@ class Config:
         result = default.union(self.services.collect_dependencies())
         return result
 
-    def command(self, name: str, script: str, timeout: bool = False, quiet: bool = False, **env):
+    def command(self, name: str, script: str, timeout: int = None, quiet: bool = False, **env):
         return self.nodes.command(self.logger, name,
                                   self.planes.maintain, script, env,
                                   timeout, quiet)
 
-    def command_master(self, script: str, timeout: bool = False, quiet: bool = False, **env):
+    def command_master(self, script: str, timeout: int = None, quiet: bool = False, **env):
         env = {k: str(v) for k, v in env.items()}
         return self.nodes.command(self.logger, self.nodes.master,
                                   self.planes.maintain, script, env,
                                   timeout, quiet)
 
-    def command_all(self, script: str, timeout: bool = False, quiet: bool = False, **env):
+    def command_all(self, script: str, timeout: int = None, quiet: bool = False, **env):
         env = {k: str(v) for k, v in env.items()}
         return [(worker, self.nodes.command(self.logger, worker,
                                             self.planes.maintain, script, env,
