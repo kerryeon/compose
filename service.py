@@ -100,7 +100,7 @@ def compose_cluster(config: Config, reset: bool = True, services: bool = True):
 
 def benchmark_cluster(config: Config):
     from datetime import datetime
-    time = datetime.now().strftime('Y%YM%mD%d-%H:%M:%S')
+    time = datetime.now().strftime('Y%YM%mD%d-H%HM%MS%S')
     name = f'{config.benchmark}-{time}'
 
     config.logger.info(f'Doing benchmark: {config.benchmark}')
