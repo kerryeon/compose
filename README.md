@@ -16,6 +16,12 @@ This project is designed to address to [NetAI, GIST](https://nm.gist.ac.kr/).
 ./batch.py batch.yaml
 ```
 
+### Visualize Tasks
+
+``` bash
+./visualize.py rook
+```
+
 ## Requirements
 
 ### Arch
