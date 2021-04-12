@@ -244,6 +244,14 @@ def visualize():
 
     def _attach_labels(label: str, df):
         df['label'] = label
+
+        # parse config
+        with open(f'./outputs/metadata/{label}.yaml') as f:
+            context = yaml.load(f, Loader=yaml.SafeLoader)
+        df['numNodes'] = len(context['nodes']['desc'])
+        service = next(svc for svc in context['services']
+                       if svc['name'] == 'rook')
+        df['osdsPerDevice'] = int(service['desc']['osdsPerDevice'])
         return df
 
     def _print_data(header: list, data: dict):
@@ -261,6 +269,7 @@ def visualize():
         return _attach_labels(label, df)
 
     dfs = []
+    labels = []
     for file in glob.glob('./outputs/*.tar'):
         # load a file
         with tarfile.open(file) as tar:
@@ -282,6 +291,7 @@ def visualize():
 
         # make a data frame
         label = file.split('/')[-1][:-4]
+        labels.append(label)
         df = _to_data_frame(label, header, data)
         dfs.append(df)
 
@@ -289,9 +299,10 @@ def visualize():
     df = pd.concat(dfs)
 
     # store result to .csv file
-    df.to_csv('./outputs/rook.csv')
+    labels.sort()
+    df.to_csv(f'./outputs/result_{labels[0]}_{labels[-1]}.csv')
 
     # visualize data
-    frame = df[df['rd_name'] == 'rd_rr_4k']
-    frame.plot(x='label', y='iops')
-    plt.show()
+    # frame = df[df['rd_name'] == 'rd_rr_4k']
+    # frame.plot(x='label', y='iops')
+    # plt.show()
