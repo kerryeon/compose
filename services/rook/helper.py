@@ -297,10 +297,13 @@ def visualize():
 
     # merge data frames
     df = pd.concat(dfs)
+    df = df.reset_index(drop=True)
+    df.index.name = 'index'
 
     # store result to .csv file
     labels.sort()
-    df.to_csv(f'./outputs/result_{labels[0]}_{labels[-1]}.csv')
+    os.makedirs('./outputs/results', exist_ok=True)
+    df.to_csv(f'./outputs/results/{labels[0]}_{labels[-1]}.csv')
 
     # visualize data
     # frame = df[df['rd_name'] == 'rd_rr_4k']
