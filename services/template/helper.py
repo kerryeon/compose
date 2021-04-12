@@ -17,3 +17,7 @@ def shutdown(config: Config, service: Service):
 
 def benchmark(config: Config, name: str):
     config.logger.info(f'Doing benchmark: {name}')
+
+
+def visualize():
+    pass
