@@ -114,7 +114,7 @@ def benchmark_cluster(config: Config):
 
 
 def shutdown_cluster_services(config: Config):
-    for name, service in config.services.all():
+    for name, service in reversed(config.services.all()):
         config.logger.info(f'Doing shutdown service: {name}')
         composer = import_helper(name, 'shutdown')
         if composer is not None:

@@ -18,6 +18,9 @@ class Volume:
     def __init__(self, name: str, type: str):
         self.name = name
         self.type = type
+        self.desc = {}
+
+        self.usable = True
 
     @classmethod
     def parse(cls, context: dict):
@@ -29,7 +32,7 @@ class Volume:
 class Node:
     def __init__(self, id: int, name: str,
                  username: str, password: str,
-                 volumes: dict):
+                 volumes: list):
         self.id = id
         self.name = name
         self.username = username
@@ -97,8 +100,7 @@ class Node:
         username = str(context['username'])
         password = context.get('password')
         password = str(password) if password is not None else password
-        volumes = {v.name: v for v in [
-            Volume.parse(v) for v in context['volumes']]}
+        volumes = [Volume.parse(v) for v in context['volumes']]
         return Node(id, name, username, password, volumes)
 
 
@@ -119,8 +121,11 @@ class Nodes:
     def workers(self) -> list:
         return [n for n in self.data if n != self.master]
 
-    def volumes(self, name: str) -> dict:
+    def volumes(self, name: str) -> list:
         return self.data[name].volumes
+
+    def volumes_by_type(self, name: str, type: str) -> list:
+        return [v for v in self.data[name].volumes if v.type == type]
 
     def command(self, logger, name: str, plane: str, script: str,
                 env: dict, timeout: int, quiet: bool):
@@ -161,7 +166,7 @@ class Planes:
 
 
 class Service:
-    def __init__(self, name: str, version: str, desc: dict):
+    def __init__(self, name: str, version: str, desc: object):
         self.name = name
         self.version = version
         self.desc = desc
@@ -175,7 +180,7 @@ class Service:
         name = str(context['name'])
         version = str(context['version'])
         desc = context.get('desc')
-        desc = dict(desc) if desc is not None else {}
+        desc = desc if desc is not None else {}
         return Service(name, version, desc)
 
 
@@ -218,11 +223,14 @@ class Config:
     def node_ip(self, name: str):
         return self.nodes.node_ip(name, self.planes.primary_value)
 
-    def volumes(self, name: str) -> dict:
+    def volumes(self, name: str) -> list:
         return self.nodes.volumes(name)
 
+    def volumes_by_type(self, name: str, type: str) -> list:
+        return self.nodes.volumes_by_type(name, type)
+
     def volumes_str(self, name: str) -> str:
-        return ' '.join(f'/dev/{v}' for v in self.volumes(name).keys())
+        return ' '.join(f'/dev/{v.name}' for v in self.volumes(name))
 
     def collect_dependencies(self) -> set:
         default = {'docker', 'kubernetes', self.benchmark}

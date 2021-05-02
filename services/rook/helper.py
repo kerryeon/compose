@@ -81,12 +81,14 @@ def modify(config: Config, service: Service):
                 # 'osdsPerDevice': str(osds_per_device),
             }
             storge_devices = []
-            for name, volume in config.nodes.volumes(node).items():
+            for volume in config.nodes.volumes(node):
+                if not volume.usable:
+                    continue
                 if volume.type == metadata:
-                    storge_config['metadataDevice'] = name
+                    storge_config['metadataDevice'] = volume.name
                 else:
                     num_osds += 1
-                    storge_devices.append({'name': name})
+                    storge_devices.append({'name': volume.name})
             storage['nodes'].append({
                 'name': node,
                 'config': storge_config,
