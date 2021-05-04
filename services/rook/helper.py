@@ -254,6 +254,28 @@ def visualize():
         service = next(svc for svc in context['services']
                        if svc['name'] == 'rook')
         df['osdsPerDevice'] = int(service['desc']['osdsPerDevice'])
+        df['metadata'] = service['desc'].get('metadata')
+
+        # parse config: cas
+        services_cas = [svc for svc in context['services']
+                        if svc['name'] == 'cas']
+        if services_cas:
+            if len(services_cas) != 1:
+                raise Exception(
+                    '2 or more CAS settings at once is not supported.'
+                )
+            for service_cas in services_cas:
+                if len(service_cas['desc']) != 1:
+                    raise Exception(
+                        '2 or more CAS devices at once is not supported.'
+                    )
+                for config in service_cas['desc']:
+                    df['cas_enabled'] = True
+                    df['cas_cache'] = str(config['cache'])
+                    df['cas_devices'] = str(set(config['devices']))
+                    df['cas_mode'] = str(config['mode'])
+        else:
+            df['cas_enabled'] = False
         return df
 
     def _print_data(header: list, data: dict):
