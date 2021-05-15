@@ -22,10 +22,14 @@ def compose(config: Config, service: Service):
 
         return volume_name
 
-    def mask_volumes(cas_volume: str, volumes: list):
+    def mask_volume(name: str, volumes: list, real_volume: str, cas_volume: str):
         for volume in volumes:
-            volume.desc['cas'] = cas_volume
-            volume.usable = False
+            if volume.name == real_volume:
+                volume.desc['cas'] = cas_volume
+                volume.usable = False
+                return
+        raise Exception(
+            f'Could not find the device: {name} - {real_volume}')
 
     # init
     shutdown(config, service)
@@ -47,7 +51,8 @@ def compose(config: Config, service: Service):
                 raise Exception(
                     f'2 or more Cache Devices at once is not supported: {name} - {content_caches}'
                 )
-            content_cache_id = get_volume_id(name, content_caches[0].name)
+            content_cache_name = content_caches[0].name
+            content_cache_id = get_volume_id(name, content_cache_name)
 
             content_devices = [
                 volume for type in devices
@@ -83,9 +88,12 @@ def compose(config: Config, service: Service):
 
                 # mask
                 content_cas = update_cas_volume(
-                    config, name, id, content_device_name)
-                mask_volumes(content_cas, content_caches)
-                mask_volumes(content_cas, content_devices)
+                    config, name, id, content_device_name
+                )
+                mask_volume(name, content_caches,
+                            content_cache_name, None)
+                mask_volume(name, content_devices,
+                            content_device_name, content_cas)
 
 
 def shutdown(config: Config, service: Service):
