@@ -7,13 +7,13 @@ def compose(config: Config, service: Service):
     def get_volume_id(name: str, volume: str):
         return config.command(
             name,
-            script=f'ls -al /dev/disk/by-id | grep {volume} | egrep -o \'nvme-[^ ]+\''
+            script=rf'ls -al /dev/disk/by-id | grep {volume} | egrep -o \'nvme-[^ ]+\''
         )[0].strip()
 
-    def update_cas_volume(config: Config, name: str, id: int):
+    def update_cas_volume(config: Config, name: str, id: int, device: str):
         volume_name = config.command(
             name,
-            script=f'sudo casadm -L | egrep \'cache[ ]+{id}\' | grep -Po \'/dev/\w+\''
+            script=rf'sudo casadm -L | egrep \'cache[ ]+{id}[ ]+/dev/{device}\' | grep -Po \'/dev/cas[\w-]+\''
         )[0].strip()[5:]
         volume_type = 'cas'
 
@@ -57,7 +57,7 @@ def compose(config: Config, service: Service):
             if not content_devices:
                 config.logger.info(f'Skipping cache: {name}')
                 continue
-            content_devices_ids = [get_volume_id(name, v.name)
+            content_devices_ids = [(v.name, get_volume_id(name, v.name))
                                    for v in content_devices]
 
             # create
@@ -68,19 +68,24 @@ def compose(config: Config, service: Service):
                 name,
                 script=f'sudo casadm -S -i {id} -c {mode} -d /dev/disk/by-id/{content_cache_id} --force'
             )
-            for content_device_id in content_devices_ids:
+            for content_device_name, content_device_id in content_devices_ids:
                 config.logger.info(
                     f'Creating OpenCAS Core Device: {name} - {content_device_id}'
                 )
                 config.command(
                     name,
-                    script=f'sudo casadm -A -i {id} -d /dev/disk/by-id/{content_device_id} --force'
+                    script=f'''
+                    sudo sgdisk -G /dev/disk/by-id/{content_device_id}
+                    echo 'start=2048, type=20' | sudo sfdisk /dev/disk/by-id/{content_device_id}
+                    sudo casadm -A -i {id} -d /dev/disk/by-id/{content_device_id}-part1 --force
+                    '''
                 )
 
-            # mask
-            content_cas = update_cas_volume(config, name, id)
-            mask_volumes(content_cas, content_caches)
-            mask_volumes(content_cas, content_devices)
+                # mask
+                content_cas = update_cas_volume(
+                    config, name, id, content_device_name)
+                mask_volumes(content_cas, content_caches)
+                mask_volumes(content_cas, content_devices)
 
 
 def shutdown(config: Config, service: Service):
