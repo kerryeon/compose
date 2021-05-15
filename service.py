@@ -91,9 +91,9 @@ def compose_cluster_services(config: Config):
 
 
 def compose_cluster(config: Config, reset: bool = True, services: bool = True):
-    # if reset:
-    #     join_command = compose_cluster_master(config)
-    #     compose_cluster_workers(config, join_command)
+    if reset:
+        join_command = compose_cluster_master(config)
+        compose_cluster_workers(config, join_command)
     if services:
         compose_cluster_services(config)
 
@@ -132,8 +132,8 @@ def shutdown_cluster(config: Config):
 
 def solve(config: Config):
     config.planes.primary = select_kubernetes_plane(config)
-    # ensure_root_permission(config)
-    # eusure_dependencies(config)
+    ensure_root_permission(config)
+    eusure_dependencies(config)
     compose_cluster(config)
     benchmark_cluster(config)
     shutdown_cluster(config)
