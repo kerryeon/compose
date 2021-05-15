@@ -11,6 +11,7 @@ def compose(config: Config, service: Service):
         )[0].strip()
 
     def update_cas_volume(config: Config, name: str, id: int, device: str):
+        print(f'sudo casadm -L | egrep \'cache[ ]+{id}[ ]+/dev/{device}\' | grep -Po \'/dev/cas[\w-]+\'')
         volume_name = config.command(
             name,
             script=f'sudo casadm -L | egrep \'cache[ ]+{id}[ ]+/dev/{device}\' | grep -Po \'/dev/cas[\w-]+\''
