@@ -73,6 +73,9 @@ def modify(config: Config, service: Service):
         storage = context['spec']['storage']
         if 'config' not in storage or storage['config'] is None:
             storage['config'] = {}
+        storage['useAllNodes'] = False
+        storage['useAllDevices'] = False
+        storage['deviceFilter'] = ''
         storage['config']['osdsPerDevice'] = str(osds_per_device)
 
         storage.setdefault('nodes', [])

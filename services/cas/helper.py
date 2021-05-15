@@ -19,7 +19,6 @@ def compose(config: Config, service: Service):
 
         volume = Volume(volume_name, volume_type)
         config.nodes.volumes(name).append(volume)
-        print(config.nodes.volumes(name))
 
         return volume_name
 
