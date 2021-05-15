@@ -7,13 +7,13 @@ def compose(config: Config, service: Service):
     def get_volume_id(name: str, volume: str):
         return config.command(
             name,
-            script=rf'ls -al /dev/disk/by-id | grep {volume} | egrep -o \'nvme-[^ ]+\''
+            script=f'ls -al /dev/disk/by-id | grep {volume} | egrep -o \'nvme-[^ ]+\''
         )[0].strip()
 
     def update_cas_volume(config: Config, name: str, id: int, device: str):
         volume_name = config.command(
             name,
-            script=rf'sudo casadm -L | egrep \'cache[ ]+{id}[ ]+/dev/{device}\' | grep -Po \'/dev/cas[\w-]+\''
+            script=f'sudo casadm -L | egrep \'cache[ ]+{id}[ ]+/dev/{device}\' | grep -Po \'/dev/cas[\w-]+\''
         )[0].strip()[5:]
         volume_type = 'cas'
 
