@@ -1,7 +1,6 @@
 from context import *
 
-# DEPENDENCY_PROGRAM = 'casadm'
-DEPENDENCY_PROGRAM = ''
+DEPENDENCY_PROGRAM = 'casadm'
 
 
 def compose(config: Config, service: Service):
