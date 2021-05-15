@@ -80,13 +80,13 @@ def compose(config: Config, service: Service):
                 print(''
                       f'sudo sgdisk -G /dev/disk/by-id/{content_device_id}'
                       f'\necho \'start=2048, type=20\' | sudo sfdisk /dev/disk/by-id/{content_device_id}'
-                      f'\nsudo casadm -A -i {id} -d /dev/disk/by-id/{content_device_id}-part1')
+                      f'\nsleep 1 && sync && sudo casadm -A -i {id} -d /dev/disk/by-id/{content_device_id}-part1')
                 config.command(
                     name,
                     script=''
                     f'sudo sgdisk -G /dev/disk/by-id/{content_device_id}'
                     f'\necho \'start=2048, type=20\' | sudo sfdisk /dev/disk/by-id/{content_device_id}'
-                    f'\nsudo casadm -A -i {id} -d /dev/disk/by-id/{content_device_id}-part1'
+                    f'\nsleep 1 && sync && sudo casadm -A -i {id} -d /dev/disk/by-id/{content_device_id}-part1'
                 )
 
                 # mask
