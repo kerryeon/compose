@@ -82,7 +82,7 @@ def compose(config: Config, service: Service):
                     script=f'''
                     sudo sgdisk -G /dev/disk/by-id/{content_device_id}
                     echo 'start=2048, type=20' | sudo sfdisk /dev/disk/by-id/{content_device_id}
-                    sudo casadm -A -i {id} -d /dev/disk/by-id/{content_device_id}
+                    sudo casadm -A -i {id} -d /dev/disk/by-id/{content_device_id}-part1
                     '''
                 )
 
