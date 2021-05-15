@@ -79,11 +79,7 @@ def compose(config: Config, service: Service):
                 )
                 config.command(
                     name,
-                    script=f'''
-                    sudo sgdisk -G /dev/disk/by-id/{content_device_id}
-                    echo 'start=2048, type=20' | sudo sfdisk /dev/disk/by-id/{content_device_id}
-                    sudo casadm -A -i {id} -d /dev/disk/by-id/{content_device_id}-part1 --force
-                    '''
+                    script=f'sudo casadm -A -i {id} -d /dev/disk/by-id/{content_device_id}'
                 )
 
                 # mask
@@ -94,6 +90,9 @@ def compose(config: Config, service: Service):
                             content_cache_name, None)
                 mask_volume(name, content_devices,
                             content_device_name, content_cas)
+                config.logger.info(
+                    f'Created OpenCAS Cache Device: {name} - {content_cas}'
+                )
 
 
 def shutdown(config: Config, service: Service):
