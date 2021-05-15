@@ -82,6 +82,8 @@ def compose(config: Config, service: Service):
                     script=''
                     f'sudo sgdisk -G /dev/disk/by-id/{content_device_id}'
                     f'\necho \'start=2048, type=20\' | sudo sfdisk /dev/disk/by-id/{content_device_id}'
+                    f'\nsleep 1 && sync && sudo mkfs.ext4 /dev/disk/by-id/{content_device_id}-part1'
+                    f'\nsleep 1 && sync && sudo wipefs --all /dev/disk/by-id/{content_device_id}-part1'
                     f'\nsleep 1 && sync && sudo casadm -A -i {id} -d /dev/disk/by-id/{content_device_id}-part1'
                 )
 
@@ -104,4 +106,6 @@ def compose(config: Config, service: Service):
 
 
 def shutdown(config: Config, service: Service):
-    config.command_all('sudo casctl stop && sudo casctl init')
+    config.command_all(
+        'sudo dmsetup remove_all && sudo casctl stop && sudo casctl init'
+    )
