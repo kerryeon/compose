@@ -77,6 +77,10 @@ def compose(config: Config, service: Service):
                 config.logger.info(
                     f'Creating OpenCAS Core Device: {name} - {content_device_id}'
                 )
+                print(''
+                      f'sudo sgdisk -G /dev/disk/by-id/{content_device_id}'
+                      f'\necho \'start=2048, type=20\' | sudo sfdisk /dev/disk/by-id/{content_device_id}'
+                      f'\nsudo casadm -A -i {id} -d /dev/disk/by-id/{content_device_id}-part1')
                 config.command(
                     name,
                     script=''
