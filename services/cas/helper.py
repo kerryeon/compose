@@ -20,7 +20,7 @@ def compose(config: Config, service: Service):
         volume_name_replaced = 'nvme3n1'
         config.command(
             name,
-            script=f'ln /dev/{volume_name} /dev/{volume_name_replaced}'
+            script=f'sudo ln /dev/{volume_name} /dev/{volume_name_replaced}'
         )
         volume_name = volume_name_replaced
 
