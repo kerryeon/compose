@@ -19,6 +19,7 @@ def compose(config: Config, service: Service):
 
         volume = Volume(volume_name, volume_type)
         config.nodes.volumes(name).append(volume)
+        print(config.nodes.volumes(name))
 
         return volume_name
 
@@ -93,6 +94,10 @@ def compose(config: Config, service: Service):
                             content_cache_name, None)
                 mask_volume(name, content_devices,
                             content_device_name, content_cas)
+                config.command(
+                    name,
+                    script=f'sudo wipefs --all /dev/{content_cas}'
+                )
                 config.logger.info(
                     f'Created OpenCAS Core Device: {name} - {content_cas}'
                 )
