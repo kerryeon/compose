@@ -91,7 +91,7 @@ def compose(config: Config, service: Service):
                 mask_volume(name, content_devices,
                             content_device_name, content_cas)
                 config.logger.info(
-                    f'Created OpenCAS Cache Device: {name} - {content_cas}'
+                    f'Created OpenCAS Core Device: {name} - {content_cas}'
                 )
 
 
