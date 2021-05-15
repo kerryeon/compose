@@ -97,8 +97,6 @@ def compose(config: Config, service: Service):
                     name,
                     script=''
                     f'sudo wipefs --all /dev/{content_cas}'
-                    f'\nsleep 1 && sync && sudo pvcreate /dev/{content_cas}'
-                    f'\nsleep 1 && sync && sudo vgcreate vg_cas /dev/{content_cas}'
                 )
                 config.logger.info(
                     f'Created OpenCAS Core Device: {name} - {content_cas}'
