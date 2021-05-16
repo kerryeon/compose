@@ -82,7 +82,7 @@ def compose(config: Config, service: Service):
                     script=''
                     f'sudo dd if=/dev/zero of=/dev/disk/by-id/{content_device_id} bs=512 count=4096 conv=notrunc'
                     f'\nsleep 1 && sync && sudo sgdisk -Go /dev/disk/by-id/{content_device_id}'
-                    f'\nsleep 1 && sync && \necho \'start=2048, type=20\' | sudo sfdisk /dev/disk/by-id/{content_device_id}'
+                    f'\nsleep 1 && sync && echo \'start=2048, type=20\' | sudo sfdisk /dev/disk/by-id/{content_device_id}'
                     f'\nsleep 1 && sync && sudo casadm -A -i {id} -d /dev/disk/by-id/{content_device_id}-part1'
                 )
 
