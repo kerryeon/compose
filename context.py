@@ -149,11 +149,11 @@ class Nodes:
 class Planes:
     def __init__(self, data: dict):
         self.data = data
-        self.primary = 'maintain'
+        self.primary = 'control'
 
     @property
-    def maintain(self) -> str:
-        return self.data['maintain']
+    def control(self) -> str:
+        return self.data['control']
 
     @property
     def primary_value(self) -> str:
@@ -239,27 +239,27 @@ class Config:
 
     def command(self, name: str, script: str, timeout: int = None, quiet: bool = False, **env):
         return self.nodes.command(self.logger, name,
-                                  self.planes.maintain, script, env,
+                                  self.planes.control, script, env,
                                   timeout, quiet)
 
     def command_master(self, script: str, timeout: int = None, quiet: bool = False, **env):
         env = {k: str(v) for k, v in env.items()}
         return self.nodes.command(self.logger, self.nodes.master,
-                                  self.planes.maintain, script, env,
+                                  self.planes.control, script, env,
                                   timeout, quiet)
 
     def command_all(self, script: str, timeout: int = None, quiet: bool = False, **env):
         env = {k: str(v) for k, v in env.items()}
         return [(worker, self.nodes.command(self.logger, worker,
-                                            self.planes.maintain, script, env,
+                                            self.planes.control, script, env,
                                             timeout, quiet))
                 for worker in self.nodes.data]
 
     def upload_master(self, files: dict):
-        return self.nodes.upload(self.logger, self.nodes.master, self.planes.maintain, files)
+        return self.nodes.upload(self.logger, self.nodes.master, self.planes.control, files)
 
     def download_master(self, files: dict):
-        return self.nodes.download(self.logger, self.nodes.master, self.planes.maintain, files)
+        return self.nodes.download(self.logger, self.nodes.master, self.planes.control, files)
 
     @classmethod
     def parse(cls, context: dict, logger):
