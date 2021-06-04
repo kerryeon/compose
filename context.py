@@ -114,7 +114,7 @@ class NodeMaster:
         name = str(context['name'])
         taint = context.get('taint')
         taint = bool(taint) if taint is not None else False
-        return Nodes(name, taint)
+        return NodeMaster(name, taint)
 
 
 class Nodes:
