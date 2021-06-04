@@ -104,8 +104,21 @@ class Node:
         return Node(id, name, username, password, volumes)
 
 
+class NodeMaster:
+    def __init__(self, name: str, taint: bool):
+        self.name = name
+        self.taint = taint
+
+    @classmethod
+    def parse(cls, context: dict):
+        name = str(context['name'])
+        taint = context.get('taint')
+        taint = bool(taint) if taint is not None else False
+        return Nodes(name, taint)
+
+
 class Nodes:
-    def __init__(self, master: str, data: dict):
+    def __init__(self, master: NodeMaster, data: dict):
         self.master = master
         self.data = data
 
@@ -113,13 +126,13 @@ class Nodes:
         return self.data[name].node_ip(plane)
 
     def master_node_ip(self, plane: str) -> str:
-        return self.node_ip(self.master, plane)
+        return self.node_ip(self.master.name, plane)
 
     def all(self) -> list:
         return list(self.data.keys())
 
     def workers(self) -> list:
-        return [n for n in self.data if n != self.master]
+        return [n for n in self.data if n != self.master.name]
 
     def volumes(self, name: str) -> list:
         return self.data[name].volumes
@@ -140,7 +153,7 @@ class Nodes:
 
     @classmethod
     def parse(cls, context: dict):
-        master = str(context['master'])
+        master = NodeMaster.parse(context['master'])
         data = {n.name: n for n in [
             Node.parse(n) for n in context['desc']]}
         return Nodes(master, data)
@@ -244,7 +257,7 @@ class Config:
 
     def command_master(self, script: str, timeout: int = None, quiet: bool = False, **env):
         env = {k: str(v) for k, v in env.items()}
-        return self.nodes.command(self.logger, self.nodes.master,
+        return self.nodes.command(self.logger, self.nodes.master.name,
                                   self.planes.maintain, script, env,
                                   timeout, quiet)
 
@@ -256,10 +269,10 @@ class Config:
                 for worker in self.nodes.data]
 
     def upload_master(self, files: dict):
-        return self.nodes.upload(self.logger, self.nodes.master, self.planes.maintain, files)
+        return self.nodes.upload(self.logger, self.nodes.master.name, self.planes.maintain, files)
 
     def download_master(self, files: dict):
-        return self.nodes.download(self.logger, self.nodes.master, self.planes.maintain, files)
+        return self.nodes.download(self.logger, self.nodes.master.name, self.planes.maintain, files)
 
     @classmethod
     def parse(cls, context: dict, logger):

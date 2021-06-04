@@ -9,7 +9,9 @@ sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
 # Schedule master node (=control plane node)
-kubectl taint nodes --all node-role.kubernetes.io/master-
+if [ $taint -eq 0 ]; then
+    kubectl taint nodes --all node-role.kubernetes.io/master-
+fi
 
 # Apply Network Policy (CNI)
 kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"

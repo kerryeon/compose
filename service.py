@@ -57,9 +57,11 @@ def compose_cluster_master(config: Config):
     with open(f'./services/kubernetes/compose-master.sh') as f:
         script += '\n' + ''.join(f.readlines())
 
-    config.logger.info(f'Initializing cluster: master ({config.nodes.master})')
+    config.logger.info(
+        f'Initializing cluster: master ({config.nodes.master.name})')
     output = config.command_master(script, node_ip=config.master_node_ip(),
-                                   volumes=config.volumes_str(config.nodes.master))
+                                   taint=int(config.nodes.master.taint),
+                                   volumes=config.volumes_str(config.nodes.master.name))
 
     # parse join command
     for idx, line in enumerate(output):

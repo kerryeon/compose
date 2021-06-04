@@ -146,7 +146,7 @@ def shutdown(config: Config, service: Service):
     with open(f'./services/kubernetes/shutdown-volumes.sh') as f:
         script = '\n' + ''.join(f.readlines())
     config.command_all(script,
-                       volumes=config.volumes_str(config.nodes.master))
+                       volumes=config.volumes_str(config.nodes.master.name))
 
 
 def benchmark(config: Config, name: str):
