@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Clean up the cluster
-kubectl delete --all pods 2>/dev/null
+kubectl delete --all pods 2>/dev/null || true
 
 # Reset k8s
 sudo kubeadm reset -f
