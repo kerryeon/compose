@@ -10,6 +10,7 @@ export KFCTL_FILE=kfctl_v${KFCTL_VERSION}-2-g55f9b2a_linux.tar.gz
 wget https://github.com/kubeflow/kfctl/releases/download/v${KFCTL_VERSION}/${KFCTL_FILE}
 tar -xf $KFCTL_FILE && rm $KFCTL_FILE
 sudo mv kfctl /usr/local/bin/kfctl
+popd
 
 # Configuration
 export KF_NAME="kubeflow-demo"
