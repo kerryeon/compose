@@ -11,6 +11,8 @@ import yaml
 
 from context import *
 
+DEPENDENCY_PROGRAM = 'true'
+
 
 FILES = [
     'crds.yaml',
