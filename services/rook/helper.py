@@ -181,6 +181,7 @@ def benchmark(config: Config, name: str):
     config.download_master({src: dst})
 
     # shutdown
+    config.logger.info(f'Finalizing benchmark: {name}')
     config.command_master(f'kubectl delete -f {url}')
 
 
