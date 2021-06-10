@@ -160,6 +160,7 @@ def benchmark(config: Config, name: str):
     src = f'{DESTINATION}/{filename}'
     dst_dir = './outputs'
     dst = f'{dst_dir}/{filename}'
+    exit(1)
 
     # play
     config.command_master(
@@ -170,6 +171,8 @@ def benchmark(config: Config, name: str):
         '\nexport pod_name=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" | grep "vdbench-")'
         '\nkubectl wait --for=condition=ready --timeout=24h pod ${pod_name}'
         # '\nkubectl exec ${pod_name} -- sed -i -e "s/600/3/g" script.ini'
+        # '\nkubectl exec ${pod_name} -- sed -i -e "s/width=16/width=1/g" script.ini'
+        # '\nkubectl exec ${pod_name} -- sed -i -e "s/file=32/file=1/g" script.ini'
         '\nkubectl exec ${pod_name} -- ./vdbench -f script.ini -o output >/dev/null'
         f'\nkubectl cp ${{pod_name}}:output "{src_dir}"'
         f'\npushd "{src_dir}" && tar cf "../{filename}" * && popd'
