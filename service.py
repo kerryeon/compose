@@ -137,5 +137,6 @@ def solve(config: Config):
     ensure_root_permission(config)
     eusure_dependencies(config)
     compose_cluster(config)
-    benchmark_cluster(config)
-    shutdown_cluster(config)
+    if config.benchmark is not None:
+        benchmark_cluster(config)
+        shutdown_cluster(config)

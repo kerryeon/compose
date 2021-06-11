@@ -246,8 +246,10 @@ class Config:
         return ' '.join(f'/dev/{v.name}' for v in self.volumes(name))
 
     def collect_dependencies(self) -> set:
-        default = {'docker', 'kubernetes', self.benchmark}
+        default = {'docker', 'kubernetes'}
         result = default.union(self.services.collect_dependencies())
+        if self.benchmark is not None:
+            default.add(self.benchmark)
         return result
 
     def command(self, name: str, script: str, timeout: int = None, quiet: bool = False, **env):
@@ -279,7 +281,8 @@ class Config:
         nodes = Nodes.parse(context['nodes'])
         planes = Planes.parse(context['planes'])
         services = Services.parse(context['services'])
-        benchmark = str(context['benchmark'])
+        benchmark = context['benchmark']
+        benchmark = str(benchmark) if benchmark is not None else None
         return Config(context, logger,
                       nodes, planes, services, benchmark)
 

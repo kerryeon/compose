@@ -56,9 +56,6 @@ def modify(config: Config, service: Service):
         if osds_per_device is not None else 1
     metadata = service.desc.get('metadata')
 
-    num_nodes = min(3, len(config.nodes.all()))
-    num_mons = ((num_nodes + 1) // 2) * 2 - 1
-
     # operator.yaml
     with open('./tmp/rook/operator.yaml', 'r') as f:
         context = list(yaml.load_all(f, Loader=yaml.SafeLoader))
@@ -70,8 +67,6 @@ def modify(config: Config, service: Service):
     num_osds = 0
     with open('./tmp/rook/cluster.yaml', 'r') as f:
         context = yaml.load(f, Loader=yaml.SafeLoader)
-        context['spec']['mon']['count'] = num_mons
-
         storage = context['spec']['storage']
         if 'config' not in storage or storage['config'] is None:
             storage['config'] = {}
@@ -80,25 +75,33 @@ def modify(config: Config, service: Service):
         storage['deviceFilter'] = ''
         storage['config']['osdsPerDevice'] = str(osds_per_device)
 
+        num_nodes = 0
         storage.setdefault('nodes', [])
         for node in config.nodes.all():
-            storge_config = {
+            storage_config = {
                 # 'osdsPerDevice': str(osds_per_device),
             }
-            storge_devices = []
+            storage_devices = []
             for volume in config.nodes.volumes(node):
                 if not volume.usable:
                     continue
                 if volume.type == metadata:
-                    storge_config['metadataDevice'] = volume.name
+                    storage_config['metadataDevice'] = volume.name
                 else:
                     num_osds += 1
-                    storge_devices.append({'name': volume.name})
+                    storage_devices.append({'name': volume.name})
             storage['nodes'].append({
                 'name': node,
-                'config': storge_config,
-                'devices': storge_devices,
+                'config': storage_config,
+                'devices': storage_devices,
             })
+            if not storage_devices:
+                num_nodes += 1
+
+        num_nodes = min(3, num_nodes)
+        num_mons = ((num_nodes + 1) // 2) * 2 - 1
+        context['spec']['mon']['count'] = num_mons
+
     with open('./tmp/rook/cluster.yaml', 'w') as f:
         yaml.dump(context, f, Dumper=yaml.SafeDumper)
 
@@ -107,7 +110,7 @@ def modify(config: Config, service: Service):
         context = list(yaml.load_all(f, Loader=yaml.SafeLoader))
         replicated = context[0]['spec']['replicated']
         replicated['size'] = num_nodes
-        replicated['requireSafeReplicaSize'] = num_osds > 1
+        replicated['requireSafeReplicaSize'] = num_osds > 2
     with open('./tmp/rook/storageclass.yaml', 'w') as f:
         yaml.dump_all(context, f, Dumper=yaml.SafeDumper)
 
@@ -160,7 +163,6 @@ def benchmark(config: Config, name: str):
     src = f'{DESTINATION}/{filename}'
     dst_dir = './outputs'
     dst = f'{dst_dir}/{filename}'
-    exit(1)
 
     # play
     config.command_master(
