@@ -20,4 +20,15 @@ def main(path: str):
 
 
 if __name__ == '__main__':
-    main('./batch.yaml')
+    import argparse
+    parser = argparse.ArgumentParser(
+        description='Automatic cluster batch benchmarking tool for GIST NetAI Lab.',
+    )
+    parser.add_argument(
+        '-f', '--file', metavar='FILENAME', type=str,
+        default='./batch.yaml',
+        help='a configuration file',
+    )
+    args = parser.parse_args()
+
+    main(args.file)

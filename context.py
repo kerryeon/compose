@@ -281,7 +281,7 @@ class Config:
         nodes = Nodes.parse(context['nodes'])
         planes = Planes.parse(context['planes'])
         services = Services.parse(context['services'])
-        benchmark = context['benchmark']
+        benchmark = context.get('benchmark')
         benchmark = str(benchmark) if benchmark is not None else None
         return Config(context, logger,
                       nodes, planes, services, benchmark)
