@@ -175,7 +175,7 @@ def benchmark(config: Config, name: str):
         # '\nkubectl exec ${pod_name} -- sed -i -e "s/600/3/g" script.ini'
         # '\nkubectl exec ${pod_name} -- sed -i -e "s/width=16/width=1/g" script.ini'
         # '\nkubectl exec ${pod_name} -- sed -i -e "s/file=32/file=1/g" script.ini'
-        '\nkubectl exec ${pod_name} -- ./vdbench -f script.ini -o output >/dev/null'
+        '\nkubectl exec ${pod_name} -- ./vdbench -f script.ini -o output'
         f'\nkubectl cp ${{pod_name}}:output "{src_dir}"'
         f'\npushd "{src_dir}" && tar cf "../{filename}" * && popd'
     )

@@ -66,7 +66,7 @@ class Node:
                 line = stdout.readline()[:-1]
                 if not quiet:
                     logger.debug(line)
-                outputs.append(line)
+                    outputs.append(line)
             while stderr.channel.recv_ready():
                 line = stderr.readline()
                 if not quiet:
