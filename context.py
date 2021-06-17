@@ -1,9 +1,13 @@
+from datetime import datetime
 import logging
 import paramiko
+import os
 import sys
+import time
 import yaml
 
 LOGGER = None
+LOGGER_FS = None
 
 
 def import_helper(name: str, attr: str):
@@ -55,15 +59,24 @@ class Node:
 
         stdin, stdout, stderr = client.exec_command(
             script, get_pty=True, timeout=timeout)
-        output = stdout.readlines()
-        if not quiet:
-            for line in output:
-                logger.debug(line[:-1])
-        for line in stderr.readlines():
-            logger.error(line[:-1])
+        outputs = []
+        while True:
+            escape = stdout.channel.eof_received
+            while stdout.channel.recv_ready():
+                line = stdout.readline()[:-1]
+                if not quiet:
+                    logger.info(line)
+                outputs.append(line)
+            while stderr.channel.recv_ready():
+                line = stderr.readline()
+                if not quiet:
+                    logger.error(line)
+            if escape:
+                break
+            time.sleep(0.01)
         stdin.close()
         client.close()
-        return output
+        return outputs
 
     def upload(self, logger, plane: str, files: dict):
         client = paramiko.SSHClient()
@@ -219,7 +232,8 @@ class Services:
 
 
 class Config:
-    def __init__(self, context: dict, logger,
+    def __init__(self, context: dict, logger, logger_fs,
+                 work_time: str, work_name: str,
                  nodes: Nodes, planes: Planes,
                  services: Services, benchmark: str):
         self.nodes = nodes
@@ -227,8 +241,12 @@ class Config:
         self.services = services
         self.benchmark = benchmark
 
+        self.work_time = work_time
+        self.work_name = work_name
+
         self._context = context
         self.logger = logger
+        self.logger_fs = logger_fs
 
     def master_node_ip(self):
         return self.nodes.master_node_ip(self.planes.primary_value)
@@ -277,24 +295,45 @@ class Config:
         return self.nodes.download(self.logger, self.nodes.master.name, self.planes.maintain, files)
 
     @classmethod
-    def parse(cls, context: dict, logger):
+    def parse(cls, name: str, context: dict, logger):
+        benchmark = context.get('benchmark')
+        benchmark = str(benchmark) if benchmark is not None else None
+
+        work_time = datetime.now().strftime('Y%YM%mD%d-H%HM%MS%S')
+        work_name = benchmark if benchmark is not None else 'compose'
+        work_name = f'{work_name}-{work_time}'
+
         nodes = Nodes.parse(context['nodes'])
         planes = Planes.parse(context['planes'])
         services = Services.parse(context['services'])
-        benchmark = context.get('benchmark')
-        benchmark = str(benchmark) if benchmark is not None else None
-        return Config(context, logger,
+
+        logger_fs = cls._init_logger_fs(work_name)
+        logger_fs.info(f'Loading config: {name}')
+        return Config(context, logger, logger_fs, work_time, work_name,
                       nodes, planes, services, benchmark)
 
     @classmethod
     def load(cls, name: str, context: dict):
         logger = cls._init_logger()
         logger.info(f'Loading config: {name}')
-        return Config.parse(context, logger)
+        return Config.parse(name, context, logger)
 
     def save(self, path: str):
         with open(path, 'w') as f:
             yaml.dump(self._context, f, Dumper=yaml.SafeDumper)
+
+    @classmethod
+    def _create_logger(cls, stream, level, *, name=None):
+        handler = logging.StreamHandler(stream)
+        formatter = logging.Formatter(
+            '[ %(levelname)s ] %(asctime)s -  %(message)s'
+        )
+        handler.setFormatter(formatter)
+
+        logger = logging.getLogger(name)
+        logger.setLevel(level)
+        logger.addHandler(handler)
+        return logger
 
     @classmethod
     def _init_logger(cls):
@@ -302,12 +341,18 @@ class Config:
         if LOGGER is not None:
             return LOGGER
 
-        handler = logging.StreamHandler(sys.stdout)
-        formatter = logging.Formatter(
-            '[ %(levelname)s ] %(asctime)s -  %(message)s')
-        handler.setFormatter(formatter)
-
-        LOGGER = logging.getLogger('compose')
-        LOGGER.setLevel(logging.INFO)
-        LOGGER.addHandler(handler)
+        LOGGER = cls._create_logger(sys.stdout, logging.INFO, name='compose')
         return LOGGER
+
+    @classmethod
+    def _init_logger_fs(cls, work_name: str):
+        global LOGGER_FS, LOGGER_FS
+        if LOGGER_FS is not None:
+            return LOGGER_FS
+
+        parent_dir = './outputs/logs'
+        filename = f'{parent_dir}/{work_name}.log'
+
+        os.makedirs(parent_dir, mode=0o755, exist_ok=True)
+        LOGGER_FS = cls._create_logger(open(filename, 'w'), logging.NOTSET)
+        return LOGGER_FS
