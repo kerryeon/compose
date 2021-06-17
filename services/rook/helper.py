@@ -95,7 +95,7 @@ def modify(config: Config, service: Service):
                 'config': storage_config,
                 'devices': storage_devices,
             })
-            if not storage_devices:
+            if storage_devices:
                 num_nodes += 1
 
         num_nodes = min(3, num_nodes)
