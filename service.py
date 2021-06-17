@@ -101,18 +101,14 @@ def compose_cluster(config: Config, reset: bool = True, services: bool = True):
 
 
 def benchmark_cluster(config: Config):
-    from datetime import datetime
-    time = datetime.now().strftime('Y%YM%mD%d-H%HM%MS%S')
-    name = f'{config.benchmark}-{time}'
-
     config.logger.info(f'Doing benchmark: {config.benchmark}')
     benchmarker = import_helper(config.benchmark, 'benchmark')
-    benchmarker(config, name)
+    benchmarker(config, config.work_name)
 
     # save config (metadata)
     meta_dir = './outputs/metadata'
     os.makedirs(meta_dir, exist_ok=True)
-    config.save(f'{meta_dir}/{name}.yaml')
+    config.save(f'{meta_dir}/{config.work_name}.yaml')
 
 
 def shutdown_cluster_services(config: Config):
