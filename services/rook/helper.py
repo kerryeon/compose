@@ -126,7 +126,7 @@ def upload_files(config: Config) -> list:
 def apply(config: Config, files: list):
     script = ''
     for file in files:
-        script += f'\nkubectl create -f {file}'
+        script += f'\nkubectl apply -f {file}'
         script += '\nsleep 1'
     script += '\nkubectl -n rook-ceph rollout status deploy/rook-ceph-tools'
     script += '\nkubectl patch storageclass rook-ceph-block -p \'{"metadata":{"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}\''
@@ -168,7 +168,7 @@ def benchmark(config: Config, name: str):
     config.command_master(
         quiet=True,
         script=''
-        f'kubectl create -f {url}'
+        f'kubectl apply -f {url}'
         '\nsleep 1'
         '\nexport pod_name=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" | grep "vdbench-")'
         '\nkubectl wait --for=condition=ready --timeout=24h pod ${pod_name}'
