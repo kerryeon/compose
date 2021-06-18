@@ -133,7 +133,7 @@ def apply(config: Config, files: list):
         else:
             script += '\nsleep 1'
     script += '\nkubectl -n rook-ceph rollout status deploy/rook-ceph-tools'
-    script += '\nkubectl -n rook-ceph create secret generic rook-ceph-crash-collector-keyring'
+    # script += '\nkubectl -n rook-ceph create secret generic rook-ceph-crash-collector-keyring'
     script += '\nkubectl patch storageclass rook-ceph-block -p \'{"metadata":{"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}\''
     config.command_master(script)
 
