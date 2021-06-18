@@ -89,7 +89,11 @@ def modify(config: Config, service: Service):
                     storage_config['metadataDevice'] = volume.name
                 else:
                     num_osds += 1
-                    storage_devices.append({'name': volume.name})
+                    storage_devices.append({
+                        'name': volume.name,
+                        'config': {
+                            'osdsPerDevice': str(osds_per_device),
+                        }})
             if storage_devices:
                 num_nodes += 1
                 storage['nodes'].append({
