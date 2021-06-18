@@ -90,13 +90,13 @@ def modify(config: Config, service: Service):
                 else:
                     num_osds += 1
                     storage_devices.append({'name': volume.name})
-            storage['nodes'].append({
-                'name': node,
-                'config': storage_config,
-                'devices': storage_devices,
-            })
             if storage_devices:
                 num_nodes += 1
+                storage['nodes'].append({
+                    'name': node,
+                    'config': storage_config,
+                    'devices': storage_devices,
+                })
 
         num_nodes = min(3, num_nodes)
         num_mons = ((num_nodes + 1) // 2) * 2 - 1
@@ -110,7 +110,7 @@ def modify(config: Config, service: Service):
         context = list(yaml.load_all(f, Loader=yaml.SafeLoader))
         replicated = context[0]['spec']['replicated']
         replicated['size'] = num_nodes
-        replicated['requireSafeReplicaSize'] = num_osds > 2
+        replicated['requireSafeReplicaSize'] = num_nodes > 2
     with open('./tmp/rook/storageclass.yaml', 'w') as f:
         yaml.dump_all(context, f, Dumper=yaml.SafeDumper)
 
