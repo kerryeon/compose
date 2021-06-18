@@ -127,8 +127,13 @@ def apply(config: Config, files: list):
     script = ''
     for file in files:
         script += f'\nkubectl apply -f {file}'
-        script += '\nsleep 1'
+        if file.startswith('operator'):
+            script += '\nkubectl -n rook-ceph rollout status deploy/rook-ceph-operator'
+            script += '\nsleep 60'
+        else:
+            script += '\nsleep 1'
     script += '\nkubectl -n rook-ceph rollout status deploy/rook-ceph-tools'
+    script += '\nkubectl -n rook-ceph create secret generic rook-ceph-crash-collector-keyring'
     script += '\nkubectl patch storageclass rook-ceph-block -p \'{"metadata":{"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}\''
     config.command_master(script)
 
