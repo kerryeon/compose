@@ -12,6 +12,9 @@ done
 ls /dev/mapper/ceph-* | xargs -I% -- sudo dmsetup remove %
 sudo rm -rf /dev/ceph-*
 sudo rm -rf /dev/mapper/ceph--*
+sudo rm -rf /var/lib/rook/
+sudo rm -rf /var/lib/kubelet/plugins/
+sudo rm -rf /var/lib/kubelet/plugins_registry/
 
 # Update tables
 for volume in $volumes; do
