@@ -73,7 +73,7 @@ def modify(config: Config, service: Service):
         storage['useAllNodes'] = False
         storage['useAllDevices'] = False
         storage['deviceFilter'] = ''
-        storage['config']['osdsPerDevice'] = str(osds_per_device)
+        # storage['config']['osdsPerDevice'] = str(osds_per_device)
 
         num_nodes = 0
         storage.setdefault('nodes', [])
