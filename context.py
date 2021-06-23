@@ -57,8 +57,13 @@ class Node:
                        username=self.username,
                        password=self.password)
 
-        stdin, stdout, stderr = client.exec_command(
-            script, get_pty=True, timeout=timeout)
+        try:
+            stdin, stdout, stderr = client.exec_command(
+                script, get_pty=True, timeout=timeout)
+        except paramiko.ssh_exception.SSHException as e:
+            print(e, file=sys.stderr)
+            raise Exception(f'Failed to connect to the node: {self.name}')
+
         outputs = []
         while True:
             escape = stdout.channel.eof_received
