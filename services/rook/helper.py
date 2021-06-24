@@ -299,7 +299,10 @@ def visualize():
                         '2 or more CAS devices at once is not supported.'
                     )
                 for config in service_cas['desc']:
-                    df['cas_enabled'] = True
+                    enabled = service_cas.get('enabled') != False
+                    df['cas_enabled'] = enabled
+                    if not enabled:
+                        continue
                     df['cas_cache'] = str(config['cache'])
                     df['cas_devices'] = str(set(config['devices']))
                     df['cas_mode'] = str(config['mode'])
