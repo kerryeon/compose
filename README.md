@@ -1,4 +1,4 @@
-# k8s compose
+# Auto Compose
 
 This project is designed to address to [NetAI, GIST](https://nm.gist.ac.kr/).
 
@@ -6,19 +6,19 @@ This project is designed to address to [NetAI, GIST](https://nm.gist.ac.kr/).
 
 ### Simple Task
 
-``` bash
-./config.py config.yaml
+```bash
+./config.py -f config.yaml
 ```
 
 ### Multiple Tasks
 
-``` bash
-./batch.py batch.yaml
+```bash
+./batch.py -f batch.yaml -s settings.yaml --verbose
 ```
 
 ### Visualize Tasks
 
-``` bash
+```bash
 ./visualize.py rook
 ```
 
@@ -26,6 +26,6 @@ This project is designed to address to [NetAI, GIST](https://nm.gist.ac.kr/).
 
 ### Arch
 
-``` bash
+```bash
 ./requirements-arch.sh
 ```
