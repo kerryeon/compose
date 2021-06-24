@@ -201,6 +201,7 @@ class Service:
         self.name = name
         self.version = version
         self.desc = desc
+        self.enabled = True
 
     def collect_dependencies(self) -> set:
         collector = import_helper(self.name, 'collect_dependencies')
@@ -220,11 +221,11 @@ class Services:
         self.data = data
 
     def all(self):
-        return self.data.items()
+        return {k: v for k, v in self.data.items() if v.enabled}
 
     def collect_dependencies(self) -> set:
         result = set()
-        for name, service in self.data.items():
+        for name, service in self.all():
             result.add(name)
             result = result.union(service.collect_dependencies())
         return result
@@ -236,11 +237,29 @@ class Services:
         return Services(data)
 
 
+class Benchmark:
+    def __init__(self, name: str, data: dict):
+        self.name = name
+        self.data = data
+
+    @classmethod
+    def parse(cls, context):
+        if isinstance(context, str):
+            name = context
+            data = {'name': name}
+        elif isinstance(context, dict):
+            name = str(context['name'])
+            data = context
+        else:
+            raise Exception(f'malformed benchmark: Given type {type(context)}')
+        return Benchmark(name, data)
+
+
 class Config:
     def __init__(self, context: dict, logger, logger_fs,
                  work_time: str, work_name: str,
                  nodes: Nodes, planes: Planes,
-                 services: Services, benchmark: str):
+                 services: Services, benchmark: Benchmark):
         self.nodes = nodes
         self.planes = planes
         self.services = services
@@ -249,7 +268,7 @@ class Config:
         self.work_time = work_time
         self.work_name = work_name
 
-        self._context = context
+        self.context = context
         self.logger = logger
         self.logger_fs = logger_fs
 
@@ -302,10 +321,11 @@ class Config:
     @classmethod
     def parse(cls, name: str, context: dict, logger):
         benchmark = context.get('benchmark')
-        benchmark = str(benchmark) if benchmark is not None else None
+        benchmark = Benchmark.parse(
+            benchmark) if benchmark is not None else None
 
         work_time = datetime.now().strftime('Y%YM%mD%d-H%HM%MS%S')
-        work_name = benchmark if benchmark is not None else 'compose'
+        work_name = benchmark.name if benchmark is not None else 'compose'
         work_name = f'{work_name}-{work_time}'
 
         nodes = Nodes.parse(context['nodes'])
@@ -325,7 +345,12 @@ class Config:
 
     def save(self, path: str):
         with open(path, 'w') as f:
-            yaml.dump(self._context, f, Dumper=yaml.SafeDumper)
+            yaml.dump(self.context, f, Dumper=yaml.SafeDumper)
+
+    def mute_logger(self):
+        handler = self.logger.handlers[0]
+        handler.flush()
+        handler.stream = open(os.devnull, 'w')
 
     @classmethod
     def _create_logger(cls, stream, level, *, name=None):

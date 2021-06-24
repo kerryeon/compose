@@ -143,5 +143,6 @@ cython_debug/
 # Outputs
 /batch.yaml*
 /config.yaml*
+/settings.yaml*
 /outputs*
 /tmp

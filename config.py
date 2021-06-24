@@ -2,14 +2,14 @@
 
 import yaml
 
-from context import Config
 import service
+from context import Config
 
 
-def main(path: str):
-    with open(path) as f:
+def main(config: str):
+    with open(config) as f:
         context = yaml.load(f, Loader=yaml.SafeLoader)
-    service.solve(Config.load(path, context))
+    service.solve(Config.load(config, context))
 
 
 if __name__ == '__main__':

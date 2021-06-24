@@ -101,8 +101,9 @@ def compose_cluster(config: Config, reset: bool = True, services: bool = True):
 
 
 def benchmark_cluster(config: Config):
-    config.logger.info(f'Doing benchmark: {config.benchmark}')
-    benchmarker = import_helper(config.benchmark, 'benchmark')
+    name = config.benchmark.name
+    config.logger.info(f'Doing benchmark: {name}')
+    benchmarker = import_helper(name, 'benchmark')
     benchmarker(config, config.work_name)
 
     # save config (metadata)

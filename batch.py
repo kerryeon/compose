@@ -3,20 +3,18 @@
 import yaml
 
 from context import Config
-import service
+from settings import Settings
 
 
-def main(path: str):
-    with open(path) as f:
-        contexts = list(yaml.load_all(f, Loader=yaml.SafeLoader))
+def main(config: str, settings: str):
+    with open(config) as f:
+        context = yaml.load(f, Loader=yaml.SafeLoader)
+    with open(settings) as f:
+        settings_context = yaml.load(f, Loader=yaml.SafeLoader)
 
-    index = 0
-    for context in contexts:
-        if not isinstance(context, dict):
-            continue
-        service.solve(Config.load(f'[{index}] {path}', context))
-        index += 1
-        print()
+    config = Config.load(config, context)
+    settings = Settings.load(settings, settings_context, config)
+    settings.solve()
 
 
 if __name__ == '__main__':
@@ -26,9 +24,14 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '-f', '--file', metavar='FILENAME', type=str,
-        default='./batch.yaml',
+        default='./config.yaml',
         help='a configuration file',
+    )
+    parser.add_argument(
+        '-s', '--settings', metavar='FILENAME', type=str,
+        default='./settings.yaml',
+        help='a settings file',
     )
     args = parser.parse_args()
 
-    main(args.file)
+    main(args.file, args.settings)
