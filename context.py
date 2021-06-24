@@ -221,7 +221,7 @@ class Services:
         self.data = data
 
     def all(self):
-        return {k: v for k, v in self.data.items() if v.enabled}
+        return {k: v for k, v in self.data.items() if v.enabled}.items()
 
     def collect_dependencies(self) -> set:
         result = set()

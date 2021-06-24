@@ -6,7 +6,7 @@ from context import Config
 from settings import Settings
 
 
-def main(config: str, settings: str):
+def main(config: str, settings: str, verbose: bool):
     with open(config) as f:
         context = yaml.load(f, Loader=yaml.SafeLoader)
     with open(settings) as f:
@@ -14,7 +14,7 @@ def main(config: str, settings: str):
 
     config = Config.load(config, context)
     settings = Settings.load(settings, settings_context, config)
-    settings.solve()
+    settings.solve(verbose=verbose)
 
 
 if __name__ == '__main__':
@@ -25,13 +25,17 @@ if __name__ == '__main__':
     parser.add_argument(
         '-f', '--file', metavar='FILENAME', type=str,
         default='./config.yaml',
-        help='a configuration file',
+        help='A configuration file.',
     )
     parser.add_argument(
         '-s', '--settings', metavar='FILENAME', type=str,
         default='./settings.yaml',
-        help='a settings file',
+        help='A settings file.',
+    )
+    parser.add_argument(
+        '-v', '--verbose', action='store_true',
+        help='Whether to show logs.',
     )
     args = parser.parse_args()
 
-    main(args.file, args.settings)
+    main(args.file, args.settings, args.verbose)

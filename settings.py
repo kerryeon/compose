@@ -13,7 +13,7 @@ class SettingCase:
     def condition(self, key: str, value: object):
         return SettingCase({key: value, **self.values})
 
-    def patch(self, config: context.Config):
+    def patch(self, config: context.Config, index: int, totals: int):
         def resolve(path: str, target):
             paths, targets = path.split('.'), [config]
             for path in paths:
@@ -42,7 +42,7 @@ class SettingCase:
             else:
                 setattr(parent, key, value)
 
-        config.logger.info(f'Doing patch')
+        config.logger.info(f'Doing patch: {index+1} of {totals}')
         for name, value in self.values.items():
             key, parent, original = resolve(name, config)
             replace(parent, key, value)
@@ -50,8 +50,8 @@ class SettingCase:
             replace(parent, key, value)
             config.logger.info(
                 f'Patched \'{name}\': {repr(original)} --> {repr(value)}')
-        print(config.context)
-        exit(1)
+        config.logger.info(f'Finished patch')
+        return config
 
     def __repr__(self) -> str:
         return repr(self.values)
@@ -123,7 +123,6 @@ class Settings:
         self.config = config
 
         self.config.logger.info(f'Total settings: {len(self)}')
-        self.config.mute_logger()
 
     def all(self) -> list:
         parents = []
@@ -131,9 +130,13 @@ class Settings:
             parents = child.all(parents)
         return parents
 
-    def solve(self):
-        for case in tqdm.tqdm(self.all()):
-            config = case.patch(self.config)
+    def solve(self, verbose: bool = False):
+        if not verbose:
+            self.config.mute_logger()
+
+        cases = self.all()
+        for index, case in enumerate(tqdm.tqdm(cases)):
+            config = case.patch(self.config, index, len(cases))
             service.solve(config)
 
     def __len__(self):

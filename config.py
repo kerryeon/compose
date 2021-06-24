@@ -20,7 +20,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '-f', '--file', metavar='FILENAME', type=str,
         default='./config.yaml',
-        help='a configuration file',
+        help='A configuration file.',
     )
     args = parser.parse_args()
 
