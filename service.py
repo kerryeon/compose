@@ -3,6 +3,9 @@ import os
 from context import *
 
 
+META_DIR = './outputs/metadata'
+
+
 def select_kubernetes_plane(config: Config) -> str:
     return 'data'
 
@@ -107,9 +110,8 @@ def benchmark_cluster(config: Config):
     benchmarker(config, config.work_name)
 
     # save config (metadata)
-    meta_dir = './outputs/metadata'
-    os.makedirs(meta_dir, exist_ok=True)
-    config.save(f'{meta_dir}/{config.work_name}.yaml')
+    os.makedirs(META_DIR, exist_ok=True)
+    config.save(f'{META_DIR}/{config.work_name}.yaml')
 
 
 def shutdown_cluster_services(config: Config):

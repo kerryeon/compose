@@ -1,6 +1,8 @@
 import functools
+import glob
 import operator
 import tqdm
+import yaml
 
 import context
 import service
@@ -14,28 +16,6 @@ class SettingCase:
         return SettingCase({key: value, **self.values})
 
     def patch(self, config: context.Config, index: int, totals: int):
-        def resolve(path: str, target):
-            paths, targets = path.split('.'), [config]
-            for path in paths:
-                if isinstance(target, context.Services):
-                    target = target.data[path]
-                elif isinstance(target, dict):
-                    target = target.get(path)
-                elif isinstance(target, list):
-                    found = False
-                    for child in target:
-                        if child['name'] == path:
-                            found = True
-                            target = child
-                            break
-                    if not found:
-                        raise Exception(
-                            f'failed to find instance from settings: {path}')
-                else:
-                    target = getattr(target, path)
-                targets.append(target)
-            return paths[-1], targets[-2], targets[-1]
-
         def replace(parent, key: str, value):
             if isinstance(parent, dict):
                 parent[key] = value
@@ -44,14 +24,37 @@ class SettingCase:
 
         config.logger.info(f'Doing patch: {index+1} of {totals}')
         for name, value in self.values.items():
-            key, parent, original = resolve(name, config)
+            key, parent, original = self._resolve(config, name)
             replace(parent, key, value)
-            key, parent, _ = resolve(name, config.context)
+            key, parent, _ = self._resolve(config.context, name)
             replace(parent, key, value)
             config.logger.info(
                 f'Patched \'{name}\': {repr(original)} --> {repr(value)}')
         config.logger.info(f'Finished patch')
         return config
+
+    @classmethod
+    def _resolve(cls, target: object, path: str):
+        paths, targets = path.split('.'), [target]
+        for path in paths:
+            if isinstance(target, context.Services):
+                target = target.data[path]
+            elif isinstance(target, dict):
+                target = target.get(path)
+            elif isinstance(target, list):
+                found = False
+                for child in target:
+                    if child['name'] == path:
+                        found = True
+                        target = child
+                        break
+                if not found:
+                    raise Exception(
+                        f'failed to find instance from settings: {path}')
+            else:
+                target = getattr(target, path)
+            targets.append(target)
+        return paths[-1], targets[-2], targets[-1]
 
     def __repr__(self) -> str:
         return repr(self.values)
@@ -122,8 +125,6 @@ class Settings:
         self.children = children
         self.config = config
 
-        self.config.logger.info(f'Total settings: {len(self)}')
-
     def all(self) -> list:
         parents = []
         for child in self.children:
@@ -133,11 +134,30 @@ class Settings:
     def solve(self, verbose: bool = False):
         if not verbose:
             self.config.mute_logger()
+        logger = self.config.logger
 
         cases = self.all()
+        totals = len(cases)
+        logger.info(f'Total rows: {totals}')
+
         for index, case in enumerate(tqdm.tqdm(cases)):
+            if self.is_conducted(case):
+                logger.info(f'Skipping patch: {index+1} of {totals}')
+                continue
             config = case.patch(self.config, index, len(cases))
             service.solve(config)
+
+    def is_conducted(self, case: SettingCase) -> bool:
+        def is_same(context: dict, name: str, given: object):
+            _, _, expected = SettingCase._resolve(context, name)
+            return expected == given
+
+        for file in glob.glob(f'{service.META_DIR}/**.yaml'):
+            with open(file) as f:
+                context = yaml.load(f, Loader=yaml.SafeLoader)
+            if all(is_same(context, k, v) for k, v in case.values.items()):
+                return True
+        return False
 
     def __len__(self):
         return functools.reduce(operator.mul, (len(c) for c in self.children), 1)
