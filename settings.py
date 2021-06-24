@@ -23,6 +23,7 @@ class SettingCase:
                 setattr(parent, key, value)
 
         config.logger.info(f'Doing patch: {index+1} of {totals}')
+        config.update_work_name()
         for name, value in self.values.items():
             key, parent, original = self._resolve(config, name)
             replace(parent, key, value)

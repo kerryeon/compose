@@ -257,15 +257,13 @@ class Benchmark:
 
 class Config:
     def __init__(self, context: dict, logger, logger_fs,
-                 work_time: str, work_name: str,
-                 nodes: Nodes, planes: Planes,
+                 work_name: str, nodes: Nodes, planes: Planes,
                  services: Services, benchmark: Benchmark):
         self.nodes = nodes
         self.planes = planes
         self.services = services
         self.benchmark = benchmark
 
-        self.work_time = work_time
         self.work_name = work_name
 
         self.context = context
@@ -318,15 +316,16 @@ class Config:
     def download_master(self, files: dict):
         return self.nodes.download(self.logger, self.nodes.master.name, self.planes.maintain, files)
 
+    def update_work_name(self):
+        self.work_name = self._alloc_work_name(self.benchmark)
+
     @classmethod
     def parse(cls, name: str, context: dict, logger):
         benchmark = context.get('benchmark')
         benchmark = Benchmark.parse(
             benchmark) if benchmark is not None else None
 
-        work_time = datetime.now().strftime('Y%YM%mD%d-H%HM%MS%S')
-        work_name = benchmark.name if benchmark is not None else 'compose'
-        work_name = f'{work_name}-{work_time}'
+        work_name = cls._alloc_work_name(benchmark)
 
         nodes = Nodes.parse(context['nodes'])
         planes = Planes.parse(context['planes'])
@@ -334,7 +333,7 @@ class Config:
 
         logger_fs = cls._init_logger_fs(work_name)
         logger_fs.info(f'Loading config: {name}')
-        return Config(context, logger, logger_fs, work_time, work_name,
+        return Config(context, logger, logger_fs, work_name,
                       nodes, planes, services, benchmark)
 
     @classmethod
@@ -351,6 +350,12 @@ class Config:
         handler = self.logger.handlers[0]
         handler.flush()
         handler.stream = open(os.devnull, 'w')
+
+    @classmethod
+    def _alloc_work_name(cls, benchmark: Benchmark):
+        work_time = datetime.now().strftime('Y%YM%mD%d-H%HM%MS%S')
+        work_name = benchmark.name if benchmark is not None else 'compose'
+        return f'{work_name}-{work_time}'
 
     @classmethod
     def _create_logger(cls, stream, level, *, name=None):
