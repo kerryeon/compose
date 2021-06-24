@@ -46,10 +46,10 @@ class SettingCase:
         for name, value in self.values.items():
             key, parent, original = resolve(name, config)
             replace(parent, key, value)
-            key, parent, original = resolve(name, config.context)
+            key, parent, replaced = resolve(name, config.context)
             replace(parent, key, value)
             config.logger.info(
-                f'Patched \'{name}\': {repr(original)} --> {repr(value)}')
+                f'Patched \'{name}\': {repr(original)} --> {repr(replaced)}')
         config.logger.info(f'Finished patch')
         return config
 
