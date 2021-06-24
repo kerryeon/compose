@@ -54,7 +54,16 @@ def modify(config: Config, service: Service):
     osds_per_device = service.desc.get('osdsPerDevice')
     osds_per_device = int(osds_per_device) \
         if osds_per_device is not None else 1
+
     metadata = service.desc.get('metadata')
+    if isinstance(metadata, list):
+        pass
+    elif isinstance(metadata, str):
+        metadata = [metadata]
+    elif metadata is None:
+        metadata = []
+    else:
+        raise Exception(f'malformed metadata: {metadata}')
 
     # operator.yaml
     with open('./tmp/rook/operator.yaml', 'r') as f:
@@ -85,7 +94,7 @@ def modify(config: Config, service: Service):
             for volume in config.nodes.volumes(node):
                 if not volume.usable:
                     continue
-                if volume.type == metadata:
+                if volume.type in metadata:
                     storage_config['metadataDevice'] = volume.name
                 else:
                     num_osds += 1
