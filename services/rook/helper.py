@@ -203,7 +203,7 @@ def benchmark(config: Config, benchmark: Benchmark, name: str):
 
     # generate & upload the yaml script
     os.makedirs(SOURCE, mode=0o755, exist_ok=True)
-    with open(f'{SOURCE}/benchmark.yaml', 'r') as f:
+    with open(f'{SOURCE}/benchmark.yaml', 'w') as f:
         generator.generate_yaml(f, taint=node is not None)
     config.command_master(f'mkdir -p {DESTINATION}')
     config.upload_master({
