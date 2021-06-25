@@ -15,7 +15,7 @@ def shutdown(config: Config, service: Service):
     config.logger.info(f'Doing shutdown: {service.name}')
 
 
-def benchmark(config: Config, name: str):
+def benchmark(config: Config, benchmark: Benchmark, name: str):
     config.logger.info(f'Finalizing benchmark: {name}')
 
 

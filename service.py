@@ -107,7 +107,7 @@ def benchmark_cluster(config: Config):
     name = config.benchmark.name
     config.logger.info(f'Doing benchmark: {name}')
     benchmarker = import_helper(name, 'benchmark')
-    benchmarker(config, config.work_name)
+    benchmarker(config, config.benchmark, config.work_name)
 
     # save config (metadata)
     os.makedirs(META_DIR, exist_ok=True)

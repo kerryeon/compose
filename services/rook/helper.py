@@ -10,6 +10,7 @@ import urllib3
 import yaml
 
 from context import *
+from .generator import Generator
 
 DEPENDENCY_PROGRAM = 'true'
 
@@ -23,6 +24,7 @@ FILES = [
     'toolbox.yaml',
 ]
 
+SOURCE = './tmp/rook'
 DESTINATION = './.compose/rook'
 
 
@@ -36,7 +38,7 @@ def collect_dependencies(service: Service) -> set:
 def download_file(config: Config, version: str, path: str) -> str:
     filename = path.split('/')[-1]
     url = f'https://raw.githubusercontent.com/rook/rook/v{version}/cluster/examples/kubernetes/ceph/{path}'
-    dst = f'./tmp/rook/{filename}'
+    dst = f'{SOURCE}/{filename}'
 
     http = urllib3.PoolManager()
     with open(dst, 'wb') as out:
@@ -46,7 +48,7 @@ def download_file(config: Config, version: str, path: str) -> str:
 
 
 def download_files(config: Config, version: str) -> list:
-    os.makedirs('./tmp/rook', mode=0o755, exist_ok=True)
+    os.makedirs(SOURCE, mode=0o755, exist_ok=True)
     return [download_file(config, version, name) for name in FILES]
 
 
@@ -66,15 +68,15 @@ def modify(config: Config, service: Service):
         raise Exception(f'malformed metadata: {metadata}')
 
     # operator.yaml
-    with open('./tmp/rook/operator.yaml', 'r') as f:
+    with open(f'{SOURCE}/operator.yaml', 'r') as f:
         context = list(yaml.load_all(f, Loader=yaml.SafeLoader))
         context[0]['data']['ROOK_ENABLE_DISCOVERY_DAEMON'] = 'true'
-    with open('./tmp/rook/operator.yaml', 'w') as f:
+    with open(f'{SOURCE}/operator.yaml', 'w') as f:
         yaml.dump_all(context, f, Dumper=yaml.SafeDumper)
 
     # cluster.yaml
     num_osds = 0
-    with open('./tmp/rook/cluster.yaml', 'r') as f:
+    with open(f'{SOURCE}/cluster.yaml', 'r') as f:
         context = yaml.load(f, Loader=yaml.SafeLoader)
         storage = context['spec']['storage']
         if 'config' not in storage or storage['config'] is None:
@@ -115,22 +117,22 @@ def modify(config: Config, service: Service):
         num_mons = ((num_nodes + 1) // 2) * 2 - 1
         context['spec']['mon']['count'] = num_mons
 
-    with open('./tmp/rook/cluster.yaml', 'w') as f:
+    with open(f'{SOURCE}/cluster.yaml', 'w') as f:
         yaml.dump(context, f, Dumper=yaml.SafeDumper)
 
     # storageclass.yaml
-    with open('./tmp/rook/storageclass.yaml', 'r') as f:
+    with open(f'{SOURCE}/storageclass.yaml', 'r') as f:
         context = list(yaml.load_all(f, Loader=yaml.SafeLoader))
         replicated = context[0]['spec']['replicated']
         replicated['size'] = num_nodes
         replicated['requireSafeReplicaSize'] = num_nodes > 2
-    with open('./tmp/rook/storageclass.yaml', 'w') as f:
+    with open(f'{SOURCE}/storageclass.yaml', 'w') as f:
         yaml.dump_all(context, f, Dumper=yaml.SafeDumper)
 
 
 def upload_files(config: Config) -> list:
     files = [f.split('/')[-1] for f in FILES]
-    files = {f'./tmp/rook/{f}': f'{DESTINATION}/{f}' for f in files}
+    files = {f'{SOURCE}/{f}': f'{DESTINATION}/{f}' for f in files}
     config.command_master(f'mkdir -p {DESTINATION}')
     config.upload_master(files)
     return list(files.values())
@@ -172,9 +174,7 @@ def shutdown(config: Config, service: Service):
                        volumes=config.volumes_str(config.nodes.master.name))
 
 
-def benchmark(config: Config, name: str):
-    url = 'https://raw.githubusercontent.com/kerryeon/rook-bench/master/rook-bench.yaml'
-
+def benchmark(config: Config, benchmark: Benchmark, name: str):
     filename = f'{name}.tar'
 
     src_dir = f'{DESTINATION}/{name}'
@@ -182,17 +182,44 @@ def benchmark(config: Config, name: str):
     dst_dir = './outputs'
     dst = f'{dst_dir}/{filename}'
 
+    # generate script.ini
+    vdbench = benchmark.desc['vdbench']
+    generator = Generator(
+        depth=vdbench.get('depth') or 2,
+        width=vdbench.get('width') or 16,
+        file=vdbench.get('file') or 32,
+        size=vdbench.get('size') or '4M',
+        threads=vdbench.get('rbds') or 20,
+        num_rbds=vdbench.get('rbds') or 20,
+        rbd_size=vdbench.get('rbdSize') or '64Gi',
+    )
+    script_ini = generator.generate_script()
+
+    # generate & upload the yaml script
+    os.makedirs(SOURCE, mode=0o755, exist_ok=True)
+    with open(f'{SOURCE}/benchmark.yaml', 'r') as f:
+        generator.generate_yaml(f)
+    config.command_master(f'mkdir -p {DESTINATION}')
+    config.upload_master({
+        f'{SOURCE}/benchmark.yaml': f'{DESTINATION}/benchmark.yaml',
+    })
+
+    # taint the node
+    node = vdbench.get('node')
+    node = str(node) if node is not None else None
+    if node is not None:
+        config.command_master(f'kubectl label nodes {node} benckmarker=true')
+
     # play
     config.command_master(
         quiet=True,
         script=''
-        f'kubectl apply -f {url}'
+        f'kubectl apply -f {DESTINATION}/benchmark.yaml'
         '\nsleep 1'
         '\nexport pod_name=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" | grep "vdbench-")'
         '\nkubectl wait --for=condition=ready --timeout=24h pod ${pod_name}'
-        # '\nkubectl exec ${pod_name} -- sed -i -e "s/600/3/g" script.ini'
-        # '\nkubectl exec ${pod_name} -- sed -i -e "s/width=16/width=1/g" script.ini'
-        # '\nkubectl exec ${pod_name} -- sed -i -e "s/file=32/file=1/g" script.ini'
+        # inject the generated script
+        f'\nkubectl exec ${{pod_name}} -- cat > script.ini <<EOF \n{script_ini}\nEOF'
         '\nkubectl exec ${pod_name} -- ./vdbench -f script.ini -o output'
         f'\nkubectl cp ${{pod_name}}:output "{src_dir}"'
         f'\npushd "{src_dir}" && tar cf "../{filename}" * && popd'
@@ -205,7 +232,7 @@ def benchmark(config: Config, name: str):
 
     # shutdown
     config.logger.info(f'Finalizing benchmark: {name}')
-    config.command_master(f'kubectl delete -f {url}')
+    config.command_master(f'kubectl delete -f {DESTINATION}/benchmark.yaml')
 
 
 def visualize():

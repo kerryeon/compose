@@ -23,6 +23,3 @@ sudo apt update -q && sudo apt install -qy --allow-downgrades --allow-change-hel
     kubeadm \
     kubectl \
     kubernetes-cni
-
-# Set a default Node IP
-Environment="KUBELET_CONFIG_ARGS=--config=/var/lib/kubelet/config.yaml --node-ip=${node_ip}"

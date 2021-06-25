@@ -238,21 +238,21 @@ class Services:
 
 
 class Benchmark:
-    def __init__(self, name: str, data: dict):
+    def __init__(self, name: str, desc: object):
         self.name = name
-        self.data = data
+        self.desc = desc
 
     @classmethod
     def parse(cls, context):
         if isinstance(context, str):
             name = context
-            data = {'name': name}
+            desc = {}
         elif isinstance(context, dict):
             name = str(context['name'])
-            data = context
+            desc = context.get('desc')
         else:
             raise Exception(f'malformed benchmark: Given type {type(context)}')
-        return Benchmark(name, data)
+        return Benchmark(name, desc)
 
 
 class Config:
