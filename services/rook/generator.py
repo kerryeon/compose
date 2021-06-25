@@ -80,7 +80,7 @@ class Generator:
             write('apiVersion: v1')
             write('kind: PersistentVolumeClaim')
             write('metadata:')
-            write('  name: vdbench-pvc-claim-1')
+            write(f'  name: vdbench-pvc-claim-{i}')
             write('spec:')
             write('  storageClassName: rook-ceph-block')
             write('  accessModes:')
