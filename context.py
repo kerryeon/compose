@@ -322,8 +322,8 @@ class Config:
     @classmethod
     def parse(cls, name: str, context: dict, logger):
         benchmark = context.get('benchmark')
-        benchmark = Benchmark.parse(
-            benchmark) if benchmark is not None else None
+        benchmark = Benchmark.parse(benchmark) \
+            if benchmark is not None else None
 
         work_name = cls._alloc_work_name(benchmark)
 

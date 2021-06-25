@@ -150,8 +150,11 @@ class Settings:
 
     def is_conducted(self, case: SettingCase) -> bool:
         def is_same(context: dict, name: str, given: object):
-            _, _, expected = SettingCase._resolve(context, name)
-            return expected == given
+            try:
+                _, _, expected = SettingCase._resolve(context, name)
+                return expected == given
+            except AttributeError:
+                return False
 
         for file in glob.glob(f'{service.META_DIR}/**.yaml'):
             with open(file) as f:
