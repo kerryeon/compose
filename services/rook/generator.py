@@ -118,7 +118,7 @@ class Generator:
             write(f'            claimName: vdbench-pvc-claim-{i}')
         if taint:
             write('      nodeSelector:')
-            write('        benchmarker=true')
+            write('        benchmarker: \"true\"')
 
         if isinstance(stream, io.StringIO):
             stream.flush()

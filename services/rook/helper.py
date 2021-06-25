@@ -193,10 +193,9 @@ def benchmark(config: Config, benchmark: Benchmark, name: str):
         num_rbds=vdbench.get('rbds') or 20,
         rbd_size=vdbench.get('rbdSize') or '64Gi',
     )
-    script_ini = generator.generate_script()
 
     # taint the node
-    node = benchmark.get('node')
+    node = benchmark.desc.get('node')
     node = str(node) if node is not None else None
     if node is not None:
         config.command_master(f'kubectl label nodes {node} benchmarker=true')
@@ -210,6 +209,13 @@ def benchmark(config: Config, benchmark: Benchmark, name: str):
         f'{SOURCE}/benchmark.yaml': f'{DESTINATION}/benchmark.yaml',
     })
 
+    # generate & upload the ini script
+    with open(f'{SOURCE}/script.ini', 'w') as f:
+        generator.generate_script(f)
+    config.upload_master({
+        f'{SOURCE}/script.ini': f'{DESTINATION}/script.ini',
+    })
+
     # play
     config.command_master(
         quiet=True,
@@ -219,7 +225,7 @@ def benchmark(config: Config, benchmark: Benchmark, name: str):
         '\nexport pod_name=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" | grep "vdbench-")'
         '\nkubectl wait --for=condition=ready --timeout=24h pod ${pod_name}'
         # inject the generated script
-        f'\nkubectl exec ${{pod_name}} -- cat > script.ini <<EOF \n{script_ini}\nEOF'
+        f'\nkubectl cp "{DESTINATION}/script.ini" ${{pod_name}}:script.ini'
         '\nkubectl exec ${pod_name} -- ./vdbench -f script.ini -o output'
         f'\nkubectl cp ${{pod_name}}:output "{src_dir}"'
         f'\npushd "{src_dir}" && tar cf "../{filename}" * && popd'
