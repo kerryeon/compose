@@ -89,21 +89,6 @@ class Generator:
             write('    requests:')
             write(f'      storage: {self.rbd_size}')
 
-        # PVC
-        for i in range(1, self.num_rbds + 1):
-            write('---')
-            write('apiVersion: v1')
-            write('kind: PersistentVolumeClaim')
-            write('metadata:')
-            write(f'  name: vdbench-pvc-claim-{i}')
-            write('spec:')
-            write('  storageClassName: rook-ceph-block')
-            write('  accessModes:')
-            write('    - ReadWriteOnce')
-            write('  resources:')
-            write('    requests:')
-            write(f'      storage: {self.rbd_size}')
-
         # Job
         write('---')
         write('apiVersion: batch/v1')
