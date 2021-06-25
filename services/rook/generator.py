@@ -68,7 +68,7 @@ class Generator:
             return stream.read()
         return None
 
-    def generate_yaml(self, stream=None):
+    def generate_yaml(self, stream=None, *, taint: bool = True):
         if stream is None:
             stream = io.StringIO()
 
@@ -131,6 +131,9 @@ class Generator:
             write(f'        - name: vdbench-vol-{i}')
             write(f'          persistentVolumeClaim:')
             write(f'            claimName: vdbench-pvc-claim-{i}')
+        if taint:
+            write('      nodeSelector:')
+            write('        benchmarker=true')
 
         if isinstance(stream, io.StringIO):
             stream.flush()

@@ -195,20 +195,20 @@ def benchmark(config: Config, benchmark: Benchmark, name: str):
     )
     script_ini = generator.generate_script()
 
-    # generate & upload the yaml script
-    os.makedirs(SOURCE, mode=0o755, exist_ok=True)
-    with open(f'{SOURCE}/benchmark.yaml', 'r') as f:
-        generator.generate_yaml(f)
-    config.command_master(f'mkdir -p {DESTINATION}')
-    config.upload_master({
-        f'{SOURCE}/benchmark.yaml': f'{DESTINATION}/benchmark.yaml',
-    })
-
     # taint the node
     node = vdbench.get('node')
     node = str(node) if node is not None else None
     if node is not None:
-        config.command_master(f'kubectl label nodes {node} benckmarker=true')
+        config.command_master(f'kubectl label nodes {node} benchmarker=true')
+
+    # generate & upload the yaml script
+    os.makedirs(SOURCE, mode=0o755, exist_ok=True)
+    with open(f'{SOURCE}/benchmark.yaml', 'r') as f:
+        generator.generate_yaml(f, taint=node is not None)
+    config.command_master(f'mkdir -p {DESTINATION}')
+    config.upload_master({
+        f'{SOURCE}/benchmark.yaml': f'{DESTINATION}/benchmark.yaml',
+    })
 
     # play
     config.command_master(
