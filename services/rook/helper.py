@@ -196,7 +196,7 @@ def benchmark(config: Config, benchmark: Benchmark, name: str):
     script_ini = generator.generate_script()
 
     # taint the node
-    node = vdbench.get('node')
+    node = benchmark.get('node')
     node = str(node) if node is not None else None
     if node is not None:
         config.command_master(f'kubectl label nodes {node} benchmarker=true')
