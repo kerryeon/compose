@@ -3,7 +3,10 @@
 # Cleanup LVMs
 for volume in $volumes; do
     sudo sgdisk --zap-all $volume && sync
-    sudo dd if=/dev/zero of=$volume bs=1M count=100 oflag=direct,dsync && sync
+    sudo dd if=/dev/zero of=$volume bs=512 count=4096 conv=notrunc && sync
+    sudo mkfs.ext4 $volume && sync
+    sudo wipefs --all $volume && sync
+    sudo dd if=/dev/zero of=$volume bs=512 count=4096 conv=notrunc && sync
     sudo blkdiscard $volume && sync
 done
 
