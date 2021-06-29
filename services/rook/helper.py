@@ -307,16 +307,28 @@ def visualize():
         return result
 
     def _attach_labels(label: str, df):
-        df['label'] = label
+        df['benchmark.label'] = label
 
         # parse config
         with open(f'./outputs/metadata/{label}.yaml') as f:
             context = yaml.load(f, Loader=yaml.SafeLoader)
-        df['numNodes'] = len(context['nodes']['desc'])
+        df['service.rook.numNodes'] = len(context['nodes']['desc'])
         service = next(svc for svc in context['services']
                        if svc['name'] == 'rook')
-        df['osdsPerDevice'] = int(service['desc']['osdsPerDevice'])
-        df['metadata'] = service['desc'].get('metadata')
+        df['service.rook.osdsPerDevice'] = int(
+            service['desc']['osdsPerDevice'])
+        df['service.rook.metadata'] = ','.join(service['desc']['metadata'])
+
+        benchmark = context['benchmark']['desc']
+        df['benchmark.node'] = benchmark['node']
+
+        vdbench = benchmark['vdbench']
+        df['benchmark.vdbench.depth'] = vdbench['depth']
+        df['benchmark.vdbench.width'] = vdbench['width']
+        df['benchmark.vdbench.file'] = vdbench['file']
+        df['benchmark.vdbench.size'] = vdbench['size']
+        df['benchmark.vdbench.rbds'] = vdbench['rbds']
+        df['benchmark.vdbench.rbdSize'] = vdbench['rbdSize']
 
         # parse config: cas
         services_cas = [svc for svc in context['services']
@@ -333,14 +345,14 @@ def visualize():
                     )
                 for config in service_cas['desc']:
                     enabled = service_cas.get('enabled') != False
-                    df['cas_enabled'] = enabled
+                    df['service.cas.enabled'] = enabled
                     if not enabled:
                         continue
-                    df['cas_cache'] = str(config['cache'])
-                    df['cas_devices'] = str(set(config['devices']))
-                    df['cas_mode'] = str(config['mode'])
+                    df['service.cas.cache'] = str(config['cache'])
+                    df['service.cas.devices'] = str(set(config['devices']))
+                    df['service.cas.mode'] = str(config['mode'])
         else:
-            df['cas_enabled'] = False
+            df['service.cas.enabled'] = False
         return df
 
     def _print_data(header: list, data: dict):
@@ -352,9 +364,10 @@ def visualize():
     def _to_data_frame(label: str, header: list, data: dict):
         df = pd.DataFrame(
             [[k, *v] for k, v in data.items()],
-            columns=header,
+            columns=[f'benchmark.result.{c}' for c in header],
         )
-        df['iops'] = df['read_rate'] + df['write_rate']
+        df['benchmark.result.iops'] = df['benchmark.result.read_rate'] + \
+            df['benchmark.result.write_rate']
         return _attach_labels(label, df)
 
     dfs = []
@@ -395,6 +408,6 @@ def visualize():
     df.to_csv(f'./outputs/results/{labels[0]}_{labels[-1]}.csv')
 
     # visualize data
-    # frame = df[df['rd_name'] == 'rd_rr_4k']
+    # frame = df[df['benchmark.result.rd_name'] == 'rd_rr_4k']
     # frame.plot(x='label', y='iops')
     # plt.show()
