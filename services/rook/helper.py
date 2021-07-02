@@ -373,29 +373,33 @@ def visualize():
     dfs = []
     labels = []
     for file in glob.glob('./outputs/*.tar'):
-        # load a file
-        with tarfile.open(file) as tar:
-            data = tar.extractfile('totals.html').read()
+        try:
+            # load a file
+            with tarfile.open(file) as tar:
+                data = tar.extractfile('totals.html').read()
 
-        # parse data
-        soup = BeautifulSoup(data, 'html.parser')
-        data = soup.prettify().split('\n')
+            # parse data
+            soup = BeautifulSoup(data, 'html.parser')
+            data = soup.prettify().split('\n')
 
-        # find header
-        header_index = _find_header(data)
-        header = _parse_header(data, header_index)
+            # find header
+            header_index = _find_header(data)
+            header = _parse_header(data, header_index)
 
-        # find data
-        data = _parse_data(data, header_index+2)
+            # find data
+            data = _parse_data(data, header_index+2)
 
-        # print data
-        # _print_data(header, data)
+            # print data
+            # _print_data(header, data)
 
-        # make a data frame
-        label = file.split('/')[-1][:-4]
-        labels.append(label)
-        df = _to_data_frame(label, header, data)
-        dfs.append(df)
+            # make a data frame
+            label = file.split('/')[-1][:-4]
+            labels.append(label)
+            df = _to_data_frame(label, header, data)
+            dfs.append(df)
+        except Exception as e:
+            print(f'- Failed to parse the file: "{file}"', file=sys.stderr)
+            raise e
 
     # merge data frames
     df = pd.concat(dfs)
