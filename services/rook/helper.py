@@ -75,7 +75,6 @@ def modify(config: Config, service: Service):
         yaml.dump_all(context, f, Dumper=yaml.SafeDumper)
 
     # cluster.yaml
-    num_osds = 0
     with open(f'{SOURCE}/cluster.yaml', 'r') as f:
         context = yaml.load(f, Loader=yaml.SafeLoader)
         storage = context['spec']['storage']
@@ -84,27 +83,48 @@ def modify(config: Config, service: Service):
         storage['useAllNodes'] = False
         storage['useAllDevices'] = False
         storage['deviceFilter'] = ''
-        # storage['config']['osdsPerDevice'] = str(osds_per_device)
 
         num_nodes = 0
         storage.setdefault('nodes', [])
         for node in config.nodes.all():
-            storage_config = {
-                # 'osdsPerDevice': str(osds_per_device),
-            }
+            volumes = [v for v in config.nodes.volumes(node) if v.usable]
+            storage_config = {}
             storage_devices = []
-            for volume in config.nodes.volumes(node):
-                if not volume.usable:
-                    continue
-                if volume.type in metadata:
-                    storage_config['metadataDevice'] = volume.name
-                else:
-                    num_osds += 1
-                    storage_devices.append({
-                        'name': volume.name,
-                        'config': {
-                            'osdsPerDevice': str(osds_per_device),
-                        }})
+
+            if not volumes:
+                config.logger.info(f'Skipping Rook-Ceph Node: {node}')
+                continue
+
+            is_raw_mode = not any(v.type in metadata for v in volumes)
+            mode_name = 'Raw' if is_raw_mode else 'LVM'
+            config.logger.info(f'Creating Rook-Ceph Node: {node} - [{len(volumes)}] {mode_name} mode')
+
+            # Raw mode
+            if is_raw_mode:
+                for volume in volumes:
+                    num_blocks = int(config.command(node, f'sudo sgdisk /dev/{volume.name} -E')[-1])
+                    for i in range(1, osds_per_device+1):
+                        ptr_start = max(2048, int(num_blocks * ((i-1) / osds_per_device)))
+                        ptr_end = int(num_blocks * (i / osds_per_device))
+                        config.command(node, f'sudo sgdisk /dev/{volume.name} -n {i}:{ptr_start}:{ptr_end}')
+                        config.command(node, f'sudo dd if=/dev/zero of=/dev/{volume.name}p{i} bs=1M count=100 && sync')
+                        storage_devices.append({
+                            'name': f'{volume.name}p{i}',
+                            'config': {},
+                        })
+            # LVM mode
+            else:
+                for volume in volumes:
+                    if volume.type in metadata:
+                        storage_config['metadataDevice'] = volume.name
+                    else:
+                        storage_devices.append({
+                            'name': volume.name,
+                            'config': {
+                                'osdsPerDevice': str(osds_per_device),
+                            },
+                        })
+
             if storage_devices:
                 num_nodes += 1
                 storage['nodes'].append({

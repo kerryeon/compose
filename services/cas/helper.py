@@ -1,6 +1,6 @@
 from context import *
 
-DEPENDENCY_PROGRAM = ''
+DEPENDENCY_PROGRAM = 'casadm'
 
 
 def compose(config: Config, service: Service):
@@ -14,7 +14,7 @@ def compose(config: Config, service: Service):
         volume_name = config.command(
             name,
             script=f'sudo casadm -L | egrep \'core[ ]+{id}[ ]+/dev/{device}\' | grep -Po \'/dev/cas[\w-]+\''
-        )[0].strip()[5:]
+        )[0][5:]
         volume_type = 'cas'
 
         volume = Volume(volume_name, volume_type)

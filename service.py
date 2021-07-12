@@ -27,6 +27,13 @@ def ensure_root_permission(config: Config):
             exit(1)
 
 
+def eusure_os_prerequisites(config: Config):
+    # prevent linux::Ubuntu from auto-upgrading the kernel,
+    # because the kernel modules cannot be reloaded easily if upgrading the linux kernel
+    # TODO: to be implemented
+    pass
+
+
 def eusure_dependency(config: Config, name: str):
     # find installer script
     try:
@@ -69,7 +76,7 @@ def compose_cluster_master(config: Config):
     # parse join command
     for idx, line in enumerate(output):
         if line.startswith('kubeadm join '):
-            return 'sudo ' + line.strip()[:-1] + output[idx+1].strip()
+            return 'sudo ' + line + output[idx+1].strip()
     config.logger.error('Failed to initialize cluster')
     exit(1)
 

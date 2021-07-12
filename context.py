@@ -68,14 +68,16 @@ class Node:
         while True:
             escape = stdout.channel.eof_received
             while stdout.channel.recv_ready():
-                line = stdout.readline()[:-1]
+                lines = [l.strip() for l in stdout.readlines()]
                 if not quiet:
-                    logger.debug(line)
-                    outputs.append(line)
+                    for line in lines:
+                        logger.debug(line)
+                    outputs += lines
             while stderr.channel.recv_ready():
-                line = stderr.readline()
+                lines = [l.strip() for l in stderr.readlines()]
                 if not quiet:
-                    logger.error(line)
+                    for line in lines:
+                        logger.error(line)
             if escape:
                 break
             time.sleep(0.01)
