@@ -71,12 +71,20 @@ def modify(config: Config, service: Service):
     with open(f'{SOURCE}/operator.yaml', 'r') as f:
         context = list(yaml.load_all(f, Loader=yaml.SafeLoader))
         context[0]['data']['ROOK_ENABLE_DISCOVERY_DAEMON'] = 'true'
+        context[1]['spec']['template']['spec']['hostNetwork'] = True
+        for env in context[1]['spec']['template']['spec']['containers'][0]['env']:
+            if env['name'] == 'ROOK_HOSTPATH_REQUIRES_PRIVILEGED':
+                env['value'] = "true"
+                break
     with open(f'{SOURCE}/operator.yaml', 'w') as f:
         yaml.dump_all(context, f, Dumper=yaml.SafeDumper)
 
     # cluster.yaml
     with open(f'{SOURCE}/cluster.yaml', 'r') as f:
         context = yaml.load(f, Loader=yaml.SafeLoader)
+        context['spec']['network'] = {
+            'provider': 'host',
+        }
         storage = context['spec']['storage']
         if 'config' not in storage or storage['config'] is None:
             storage['config'] = {}
@@ -104,18 +112,26 @@ def modify(config: Config, service: Service):
             if is_raw_mode:
                 for volume in volumes:
                     num_blocks = int(config.command(
-                        node, f'sudo sgdisk /dev/{volume.name} -E')[-1])
+                        node, f'''
+                            sudo wipefs --all /dev/{volume.name} && sync
+                            sudo sgdisk --zap-all /dev/{volume.name} && sync
+                            sudo sgdisk /dev/{volume.name} -E
+                        ''')[-1])
                     for i in range(1, osds_per_device+1):
                         ptr_start = max(
                             2048, int(num_blocks * ((i-1) / osds_per_device)))
                         ptr_end = int(num_blocks * (i / osds_per_device))
                         config.command(
-                            node, f'sudo sgdisk /dev/{volume.name} -n {i}:{ptr_start}:{ptr_end}')
-                        config.command(
-                            node, f'sudo dd if=/dev/zero of=/dev/{volume.name}p{i} bs=1M count=100 && sync')
+                            node, f'''
+                                sudo sgdisk /dev/{volume.name} -n {i}:{ptr_start}:{ptr_end}
+                                sudo dd if=/dev/zero of=/dev/{volume.name}p{i} bs=1M count=100 conv=direct,dsync && sync
+                                sudo partprobe /dev/{volume.name}p{i} && sync
+                        ''')
                         storage_devices.append({
                             'name': f'{volume.name}p{i}',
-                            'config': {},
+                            'config': {
+                                'osdsPerDevice': '1',
+                            },
                         })
             # LVM mode
             else:
@@ -191,6 +207,7 @@ def shutdown(config: Config, service: Service):
     for file in files:
         script += f'\nkubectl delete -f {file} --timeout=240s'
         script += '\nsleep 1'
+    script += '\nkubectl delete ns rook-ceph'
     config.command_master(script)
 
     with open(f'./services/kubernetes/shutdown-volumes.sh') as f:

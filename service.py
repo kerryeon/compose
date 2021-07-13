@@ -129,20 +129,25 @@ def shutdown_cluster_services(config: Config):
             composer(config, service)
 
 
-def shutdown_cluster(config: Config):
+def shutdown_cluster(config: Config, reset: bool = True):
     shutdown_cluster_services(config)
 
-    config.logger.info(f'Doing shutdown cluster')
-    with open(f'./services/kubernetes/compose-common.sh') as f:
-        script = ''.join(f.readlines())
-    config.command_all(script)
+    if reset:
+        config.logger.info(f'Doing shutdown cluster')
+        with open(f'./services/kubernetes/compose-common.sh') as f:
+            script = ''.join(f.readlines())
+        config.command_all(script)
 
 
-def solve(config: Config):
+def solve(config: Config, init: bool = True, shutdown: bool = True):
     config.planes.primary = select_kubernetes_plane(config)
     ensure_root_permission(config)
     eusure_dependencies(config)
-    compose_cluster(config)
-    if config.benchmark is not None:
-        benchmark_cluster(config)
+    try:
+        compose_cluster(config, reset=init)
+        if config.benchmark is not None:
+            benchmark_cluster(config)
+            shutdown_cluster(config, reset=shutdown)
+    except KeyboardInterrupt:
+        config.logger.warn('SIGINT received, terminating...')
         shutdown_cluster(config)

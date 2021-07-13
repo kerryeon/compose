@@ -147,7 +147,8 @@ class Settings:
                 logger.info(f'Skipping patch: {index+1} of {totals}')
                 continue
             config = case.patch(copy.deepcopy(self.config), index, len(cases))
-            service.solve(config)
+            init, shutdown = index == 0, index + 1 == totals
+            service.solve(config, init, shutdown)
 
     def is_conducted(self, case: SettingCase) -> bool:
         def is_same(context: dict, name: str, given: object):
