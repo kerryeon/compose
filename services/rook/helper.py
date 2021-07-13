@@ -97,17 +97,22 @@ def modify(config: Config, service: Service):
 
             is_raw_mode = not any(v.type in metadata for v in volumes)
             mode_name = 'Raw' if is_raw_mode else 'LVM'
-            config.logger.info(f'Creating Rook-Ceph Node: {node} - [{len(volumes)}] {mode_name} mode')
+            config.logger.info(
+                f'Creating Rook-Ceph Node: {node} - [{len(volumes)}] {mode_name} mode')
 
             # Raw mode
             if is_raw_mode:
                 for volume in volumes:
-                    num_blocks = int(config.command(node, f'sudo sgdisk /dev/{volume.name} -E')[-1])
+                    num_blocks = int(config.command(
+                        node, f'sudo sgdisk /dev/{volume.name} -E')[-1])
                     for i in range(1, osds_per_device+1):
-                        ptr_start = max(2048, int(num_blocks * ((i-1) / osds_per_device)))
+                        ptr_start = max(
+                            2048, int(num_blocks * ((i-1) / osds_per_device)))
                         ptr_end = int(num_blocks * (i / osds_per_device))
-                        config.command(node, f'sudo sgdisk /dev/{volume.name} -n {i}:{ptr_start}:{ptr_end}')
-                        config.command(node, f'sudo dd if=/dev/zero of=/dev/{volume.name}p{i} bs=1M count=100 && sync')
+                        config.command(
+                            node, f'sudo sgdisk /dev/{volume.name} -n {i}:{ptr_start}:{ptr_end}')
+                        config.command(
+                            node, f'sudo dd if=/dev/zero of=/dev/{volume.name}p{i} bs=1M count=100 && sync')
                         storage_devices.append({
                             'name': f'{volume.name}p{i}',
                             'config': {},
