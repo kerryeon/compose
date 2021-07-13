@@ -124,8 +124,7 @@ def modify(config: Config, service: Service):
                         config.command(
                             node, f'''
                                 sudo sgdisk /dev/{volume.name} -n {i}:{ptr_start}:{ptr_end}
-                                sudo dd if=/dev/zero of=/dev/{volume.name}p{i} bs=1M count=100 conv=direct,dsync && sync
-                                sudo partprobe /dev/{volume.name}p{i} && sync
+                                sudo dd if=/dev/zero of=/dev/{volume.name}p{i} bs=1M count=100 oflag=direct,dsync && sync
                         ''')
                         storage_devices.append({
                             'name': f'{volume.name}p{i}',
@@ -133,6 +132,8 @@ def modify(config: Config, service: Service):
                                 'osdsPerDevice': '1',
                             },
                         })
+                    config.command(
+                        node, f'sudo partprobe /dev/{volume.name} && sync')
             # LVM mode
             else:
                 for volume in volumes:
