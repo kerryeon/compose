@@ -6,7 +6,7 @@ from context import Config
 from settings import Settings
 
 
-def main(config: str, settings: str, verbose: bool):
+def main(config: str, settings: str, verbose: bool, reuse: bool):
     with open(config) as f:
         context = yaml.load(f, Loader=yaml.SafeLoader)
     with open(settings) as f:
@@ -14,7 +14,7 @@ def main(config: str, settings: str, verbose: bool):
 
     config = Config.load(config, context)
     settings = Settings.load(settings, settings_context, config)
-    settings.solve(verbose=verbose)
+    settings.solve(verbose=verbose, reuse=reuse)
 
 
 if __name__ == '__main__':
@@ -36,6 +36,10 @@ if __name__ == '__main__':
         '-v', '--verbose', action='store_true',
         help='Whether to show logs.',
     )
+    parser.add_argument(
+        '--reuse', action='store_true',
+        help='Whether to reuse the existing cluster. Unstable but fast.',
+    )
     args = parser.parse_args()
 
-    main(args.file, args.settings, args.verbose)
+    main(args.file, args.settings, args.verbose, args.reuse)

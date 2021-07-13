@@ -133,7 +133,7 @@ class Settings:
             parents = child.all(parents)
         return parents
 
-    def solve(self, verbose: bool = False):
+    def solve(self, verbose: bool = False, reuse: bool = False):
         if not verbose:
             self.config.mute_logger()
         logger = self.config.logger
@@ -147,8 +147,12 @@ class Settings:
                 logger.info(f'Skipping patch: {index+1} of {totals}')
                 continue
             config = case.patch(copy.deepcopy(self.config), index, len(cases))
-            init, shutdown = index == 0, index + 1 == totals
-            service.solve(config, init, shutdown)
+
+            if reuse:
+                init, shutdown = index == 0, index + 1 == totals
+                service.solve(config, init, shutdown)
+            else:
+                service.solve(config)
 
     def is_conducted(self, case: SettingCase) -> bool:
         def is_same(context: dict, name: str, given: object):
