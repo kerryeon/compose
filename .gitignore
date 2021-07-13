@@ -146,3 +146,4 @@ cython_debug/
 /settings.yaml*
 /outputs*
 /tmp
+/nohup.out

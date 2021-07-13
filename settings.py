@@ -1,3 +1,4 @@
+import copy
 import functools
 import glob
 import operator
@@ -145,7 +146,7 @@ class Settings:
             if self.is_conducted(case):
                 logger.info(f'Skipping patch: {index+1} of {totals}')
                 continue
-            config = case.patch(self.config, index, len(cases))
+            config = case.patch(copy.deepcopy(self.config), index, len(cases))
             service.solve(config)
 
     def is_conducted(self, case: SettingCase) -> bool:
