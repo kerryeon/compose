@@ -206,9 +206,8 @@ def shutdown(config: Config, service: Service):
     files = [f'{DESTINATION}/{f.split("/")[-1]}' for f in reversed(FILES)]
     script = ''
     for file in files:
-        script += f'\nkubectl delete -f {file} --timeout=240s'
+        script += f'\nkubectl delete -f {file} --timeout=30s'
         script += '\nsleep 1'
-    script += '\nkubectl delete ns rook-ceph'
     config.command_master(script)
 
     with open(f'./services/kubernetes/shutdown-volumes.sh') as f:
