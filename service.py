@@ -142,6 +142,7 @@ def shutdown_cluster(config: Config, reset: bool = True):
 def solve(config: Config, init: bool = True, shutdown: bool = True):
     config.planes.primary = select_kubernetes_plane(config)
     ensure_root_permission(config)
+    eusure_os_prerequisites(config)
     eusure_dependencies(config)
     try:
         compose_cluster(config, reset=init)
@@ -149,5 +150,5 @@ def solve(config: Config, init: bool = True, shutdown: bool = True):
             benchmark_cluster(config)
             shutdown_cluster(config, reset=shutdown)
     except KeyboardInterrupt:
-        config.logger.warn('SIGINT received, terminating...')
+        print('SIGINT received, terminating...')
         shutdown_cluster(config)

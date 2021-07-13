@@ -8,6 +8,7 @@ import yaml
 
 LOGGER = None
 LOGGER_FS = None
+LOGGER_SSH = None
 
 
 def import_helper(name: str, attr: str):
@@ -258,7 +259,7 @@ class Benchmark:
 
 
 class Config:
-    def __init__(self, context: dict, logger, logger_fs,
+    def __init__(self, context: dict, logger, logger_fs, logger_ssh,
                  work_name: str, nodes: Nodes, planes: Planes,
                  services: Services, benchmark: Benchmark):
         self.nodes = nodes
@@ -271,6 +272,7 @@ class Config:
         self.context = context
         self.logger = logger
         self.logger_fs = logger_fs
+        self.logger_ssh = logger_ssh
 
     def master_node_ip(self):
         return self.nodes.master_node_ip(self.planes.primary_value)
@@ -295,19 +297,19 @@ class Config:
         return result
 
     def command(self, name: str, script: str, timeout: int = None, quiet: bool = False, **env):
-        return self.nodes.command(self.logger, name,
+        return self.nodes.command(self.logger_ssh, name,
                                   self.planes.maintain, script, env,
                                   timeout, quiet)
 
     def command_master(self, script: str, timeout: int = None, quiet: bool = False, **env):
         env = {k: str(v) for k, v in env.items()}
-        return self.nodes.command(self.logger, self.nodes.master.name,
+        return self.nodes.command(self.logger_ssh, self.nodes.master.name,
                                   self.planes.maintain, script, env,
                                   timeout, quiet)
 
     def command_all(self, script: str, timeout: int = None, quiet: bool = False, **env):
         env = {k: str(v) for k, v in env.items()}
-        return [(worker, self.nodes.command(self.logger, worker,
+        return [(worker, self.nodes.command(self.logger_ssh, worker,
                                             self.planes.maintain, script, env,
                                             timeout, quiet))
                 for worker in self.nodes.data]
@@ -335,8 +337,9 @@ class Config:
 
         logger_fs = cls._init_logger_fs(work_name)
         logger_fs.info(f'Loading config: {name}')
-        return Config(context, logger, logger_fs, work_name,
-                      nodes, planes, services, benchmark)
+        logger_ssh = cls._init_logger_ssh()
+        return Config(context, logger, logger_fs, logger_ssh,
+                      work_name, nodes, planes, services, benchmark)
 
     @classmethod
     def load(cls, name: str, context: dict):
@@ -363,7 +366,7 @@ class Config:
     def _create_logger(cls, stream, level, *, name=None):
         handler = logging.StreamHandler(stream)
         formatter = logging.Formatter(
-            '[ %(levelname)s ] %(asctime)s -  %(message)s'
+            '[ %(levelname)s :: %(name)s ] %(asctime)s -  %(message)s'
         )
         handler.setFormatter(formatter)
 
@@ -377,6 +380,8 @@ class Config:
         global LOGGER
         if LOGGER is not None:
             return LOGGER
+
+        cls._mute_logger_matplotlib()
 
         LOGGER = cls._create_logger(sys.stdout, logging.INFO, name='compose')
         return LOGGER
@@ -393,3 +398,21 @@ class Config:
         os.makedirs(parent_dir, mode=0o755, exist_ok=True)
         LOGGER_FS = cls._create_logger(open(filename, 'w'), logging.NOTSET)
         return LOGGER_FS
+
+    @classmethod
+    def _init_logger_ssh(cls):
+        global LOGGER_SSH
+        if LOGGER_SSH is not None:
+            return LOGGER_SSH
+
+        logger = logging.getLogger('paramiko.transport')
+        logger.setLevel(logging.WARN)
+
+        LOGGER_SSH = cls._create_logger(
+            open('/dev/null', 'w'), logging.DEBUG, name='compose::ssh')
+        return LOGGER_SSH
+
+    @classmethod
+    def _mute_logger_matplotlib(cls):
+        logger = logging.getLogger('matplotlib')
+        logger.setLevel(logging.ERROR)
