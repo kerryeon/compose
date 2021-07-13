@@ -60,7 +60,7 @@ class Node:
 
         scripts = [l for l in script.split('\n') if l]
         script_head = f'{scripts[0]} ...' if len(scripts) > 1 else scripts[0]
-        logger.debug(f'[ {self.name} ] {script_head}')
+        logger.debug(f'[ {self.name} ] {script_head.strip()}')
 
         try:
             stdin, stdout, stderr = client.exec_command(

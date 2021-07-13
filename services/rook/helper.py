@@ -114,7 +114,11 @@ def modify(config: Config, service: Service):
                     num_blocks = int(config.command(
                         node, f'''
                             sudo wipefs --all /dev/{volume.name} && sync
+                            sudo sgdisk --zap-all --clear --mbrtogpt /dev/{volume.name} && sync
                             sudo sgdisk --zap-all /dev/{volume.name} && sync
+                            sudo dd if=/dev/zero of=/dev/{volume.name} bs=1M count=1 oflag=direct,dsync && sync
+                            sudo blkdiscard /dev/{volume.name} && sync
+                            sudo sgdisk -Go /dev/{volume.name} && sync
                             sudo sgdisk /dev/{volume.name} -E
                         ''')[-1])
                     for i in range(1, osds_per_device+1):
@@ -123,8 +127,11 @@ def modify(config: Config, service: Service):
                         ptr_end = int(num_blocks * (i / osds_per_device))
                         config.command(
                             node, f'''
-                                sudo sgdisk /dev/{volume.name} -n {i}:{ptr_start}:{ptr_end}
+                                sudo sgdisk /dev/{volume.name} -n {i}:{ptr_start}:{ptr_end} && sync
                                 sudo dd if=/dev/zero of=/dev/{volume.name}p{i} bs=1M count=100 oflag=direct,dsync && sync
+                                sudo sgdisk -t 1:8300 /dev/{volume.name}p{i} && sync
+                                sudo blkdiscard /dev/{volume.name}p{i} && sync
+                                sudo partprobe /dev/{volume.name}p{i} && sync
                         ''')
                         storage_devices.append({
                             'name': f'{volume.name}p{i}',
