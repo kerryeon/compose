@@ -2,8 +2,7 @@
 
 # Turn-off swap (virtual memory)
 sudo swapoff -a
-sudo sed -e '/\/swapfile/s/^/#/g' -i /etc/fstab
-sudo sed -e '/\/swap\.img/s/^/#/g' -i /etc/fstab
+sudo sed -e '/\/dev\/mapper\/rl-swap/s/^/#/g' -i /etc/fstab
 
 # Install kubernetes
 sudo yum install -y \
@@ -23,3 +22,5 @@ sudo yum install -y --disableexcludes=kubernetes \
     kubelet \
     kubeadm \
     kubectl
+
+sudo systemctl enable --now kubelet
