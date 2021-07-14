@@ -6,7 +6,9 @@ sudo sed -e '/\/dev\/mapper\/rl-swap/s/^/#/g' -i /etc/fstab
 
 # Install kubernetes
 sudo yum install -y \
-    ipvsadm
+    ipvsadm \
+    parted \
+    gdisk
 
 cat <<EOF | sudo tee /etc/yum.repos.d/kubernetes.repo
 [kubernetes]
@@ -23,4 +25,5 @@ sudo yum install -y --disableexcludes=kubernetes \
     kubeadm \
     kubectl
 
+sudo systemctl enable --now systemd-resolved
 sudo systemctl enable --now kubelet

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Initialize cluster with D-plane
-sudo kubeadm init --apiserver-advertise-address $node_ip --pod-network-cidr 192.168.0.0/16
+sudo kubeadm init --apiserver-advertise-address $node_ip --pod-network-cidr 10.85.0.0/16
 
 rm -r $HOME/.kube
 mkdir -p $HOME/.kube
