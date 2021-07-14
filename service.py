@@ -46,7 +46,7 @@ def eusure_dependency(config: Config, name: str):
     program = import_helper(name, 'DEPENDENCY_PROGRAM') or name
 
     config.logger.info(f'Checking installation: {name}')
-    for node, outputs in config.command_all(f'which {program}'):
+    for node, outputs in config.command_all(f'which {program} 2>/dev/null'):
         if not outputs:
             config.logger.info(f'Installing {name} on {node}')
             config.command(node, script, node_ip=config.node_ip(node),

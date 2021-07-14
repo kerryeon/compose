@@ -1,9 +1,15 @@
 #!/bin/bash
 
 # Install dependencies
-sudo apt update -q && sudo apt install -qy \
+sudo yum install -y \
+    elfutils-libelf-devel \
     gcc \
+    "kernel-devel-uname-r = $(uname -r)" \
+    kernel-devel \
+    kernel-headers \
     make \
+    python3 \
+    rpm-build \
     wget
 
 # Download
