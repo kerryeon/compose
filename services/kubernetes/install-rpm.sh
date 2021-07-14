@@ -6,6 +6,7 @@ sudo sed -e '/\/dev\/mapper\/rl-swap/s/^/#/g' -i /etc/fstab
 
 # Install kubernetes
 sudo yum install -y \
+    iproute-tc \
     ipvsadm \
     parted \
     gdisk
