@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Initialize cluster with D-plane
-sudo kubeadm init --apiserver-advertise-address $node_ip
+sudo kubeadm init --apiserver-advertise-address $node_ip --pod-network-cidr 192.168.0.0/16
 
 rm -r $HOME/.kube
 mkdir -p $HOME/.kube
@@ -14,7 +14,7 @@ if [ $taint -eq 0 ]; then
 fi
 
 # Apply Network Policy (CNI)
-kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
+kubectl apply -f "https://docs.projectcalico.org/manifests/calico.yaml"
 
 # Remove RBAC
 kubectl create clusterrolebinding permissive-binding \
