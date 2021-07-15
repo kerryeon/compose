@@ -82,12 +82,18 @@ def modify(config: Config, service: Service):
     # cluster.yaml
     with open(f'{SOURCE}/cluster.yaml', 'r') as f:
         context = yaml.load(f, Loader=yaml.SafeLoader)
-        # FIXME: don't hardcode; use config.yaml instead
-        context['spec']['cephVersion']['image'] = 'ceph/ceph:v15.2.7'
-        # context['spec']['cephVersion']['image'] = 'ceph/ceph:v14.2.10'
+
+        # specify the fixed ceph version
+        ceph_version = service.desc.get('cephVersion')
+        if ceph_version is not None:
+            context['spec']['cephVersion']['image'] = f'ceph/ceph:v{ceph_version}'
+
+        # specify the ceph cluster network plane
         context['spec']['network'] = {
             'provider': 'host',
         }
+
+        # specify the disks for ceph cluster
         storage = context['spec']['storage']
         if 'config' not in storage or storage['config'] is None:
             storage['config'] = {}
