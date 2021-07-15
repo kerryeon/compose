@@ -106,14 +106,14 @@ def modify(config: Config, service: Service):
                 config.logger.info(f'Skipping Rook-Ceph Node: {node}')
                 continue
 
-            is_raw_mode = not any(v.type in metadata for v in volumes)
+            # Raw mode is supported as of 1.6
+            is_raw_mode = service.version >= '1.6' and \
+                not any(v.type in metadata for v in volumes)
             mode_name = 'Raw' if is_raw_mode else 'LVM'
             config.logger.info(
                 f'Creating Rook-Ceph Node: {node} - [{len(volumes)}] {mode_name} mode')
 
             # Raw mode
-            # FIXME: don't hardcode; use config.yaml instead
-            is_raw_mode = False
             if is_raw_mode:
                 for volume in volumes:
                     num_blocks = int(config.command(
