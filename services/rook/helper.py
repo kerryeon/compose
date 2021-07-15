@@ -129,8 +129,6 @@ def modify(config: Config, service: Service):
                             node, f'''
                                 sudo sgdisk /dev/{volume.name} -n {i}:{ptr_start}:{ptr_end} && sync
                                 sudo dd if=/dev/zero of=/dev/{volume.name}p{i} bs=1M count=100 oflag=direct,dsync && sync
-                                sudo sgdisk -t 1:8300 /dev/{volume.name}p{i} && sync
-                                sudo blkdiscard /dev/{volume.name}p{i} && sync
                                 sudo partprobe /dev/{volume.name}p{i} && sync
                         ''')
                         storage_devices.append({
