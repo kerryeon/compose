@@ -106,14 +106,14 @@ def modify(config: Config, service: Service):
                 config.logger.info(f'Skipping Rook-Ceph Node: {node}')
                 continue
 
-            # Raw mode is supported as of 1.6
+            # RAW mode is supported as of 1.6
             is_raw_mode = service.version >= '1.6' and \
                 not any(v.type in metadata for v in volumes)
-            mode_name = 'Raw' if is_raw_mode else 'LVM'
+            mode_name = 'RAW' if is_raw_mode else 'LVM'
             config.logger.info(
                 f'Creating Rook-Ceph Node: {node} - [{len(volumes)}] {mode_name} mode')
 
-            # Raw mode
+            # RAW mode
             if is_raw_mode:
                 for volume in volumes:
                     num_blocks = int(config.command(
