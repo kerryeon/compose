@@ -84,9 +84,12 @@ def modify(config: Config, service: Service):
         context = yaml.load(f, Loader=yaml.SafeLoader)
 
         # specify the fixed ceph version
-        ceph_version = service.desc.get('cephVersion')
-        if ceph_version is not None:
-            context['spec']['cephVersion']['image'] = f'ceph/ceph:v{ceph_version}'
+        ceph_image = service.desc.get('cephImage')
+        if ceph_image is not None:
+            ceph_image_user = ceph_image.get('user') or 'ceph'
+            ceph_image_version = ceph_image.get('version')
+            if ceph_image_version is not None:
+                context['spec']['cephVersion']['image'] = f'{ceph_image_user}/ceph:v{ceph_image_version}'
 
         # specify the ceph cluster network plane
         context['spec']['network'] = {
@@ -112,9 +115,14 @@ def modify(config: Config, service: Service):
                 config.logger.info(f'Skipping Rook-Ceph Node: {node}')
                 continue
 
-            # RAW mode is supported as of 1.6
-            is_raw_mode = service.version >= '1.6' and \
-                not any(v.type in metadata for v in volumes)
+            # specify the mode
+            mode = service.desc.get('mode')
+            if mode is not None:
+                is_raw_mode = str(mode).upper() == 'RAW'
+            else:
+                # RAW mode is supported as of 1.6
+                is_raw_mode = service.version >= '1.6' and \
+                    not any(v.type in metadata for v in volumes)
             mode_name = 'RAW' if is_raw_mode else 'LVM'
             config.logger.info(
                 f'Creating Rook-Ceph Node: {node} - [{len(volumes)}] {mode_name} mode')
