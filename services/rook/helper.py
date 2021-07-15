@@ -82,6 +82,9 @@ def modify(config: Config, service: Service):
     # cluster.yaml
     with open(f'{SOURCE}/cluster.yaml', 'r') as f:
         context = yaml.load(f, Loader=yaml.SafeLoader)
+        # FIXME: don't hardcode; use config.yaml instead
+        context['spec']['cephVersion']['image'] = 'ceph/ceph:v15.2.7'
+        # context['spec']['cephVersion']['image'] = 'ceph/ceph:v14.2.10'
         context['spec']['network'] = {
             'provider': 'host',
         }
@@ -109,6 +112,8 @@ def modify(config: Config, service: Service):
                 f'Creating Rook-Ceph Node: {node} - [{len(volumes)}] {mode_name} mode')
 
             # Raw mode
+            # FIXME: don't hardcode; use config.yaml instead
+            is_raw_mode = False
             if is_raw_mode:
                 for volume in volumes:
                     num_blocks = int(config.command(
