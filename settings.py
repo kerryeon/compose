@@ -118,7 +118,7 @@ class SettingNode:
                            for v in condition['values']]
             return SettingNode(name, values, False)
 
-        raise Exception('malformed settings')
+        raise Exception(f'malformed settings: {name}')
 
 
 class Settings:
