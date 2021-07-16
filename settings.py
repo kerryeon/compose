@@ -118,7 +118,7 @@ class SettingNode:
                            for v in condition['values']]
             return SettingNode(name, values, False)
 
-        raise Exception(f'malformed settings: {name}')
+        raise Exception(f'malformed settings: {name} - {list(context.keys())}')
 
 
 class Settings:
