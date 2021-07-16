@@ -19,5 +19,5 @@ def benchmark(config: Config, benchmark: Benchmark, name: str):
     config.logger.info(f'Finalizing benchmark: {name}')
 
 
-def visualize():
+def visualize(gui: bool):
     pass

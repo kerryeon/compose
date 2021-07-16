@@ -1,8 +1,8 @@
 from bs4 import BeautifulSoup
 import glob
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import plotly.graph_objs as go
 import os
 import shutil
 import tarfile
@@ -307,7 +307,7 @@ def benchmark(config: Config, benchmark: Benchmark, name: str):
     config.command_master(f'kubectl delete -f {DESTINATION}/benchmark.yaml')
 
 
-def visualize():
+def visualize(gui: bool):
     def _find_header(data: list) -> int:
         for index, line in enumerate(data):
             if line.find('cpu') != -1:
@@ -381,9 +381,20 @@ def visualize():
         df['service.rook.numNodes'] = len(context['nodes']['desc'])
         service = next(svc for svc in context['services']
                        if svc['name'] == 'rook')
-        df['service.rook.osdsPerDevice'] = int(
-            service['desc']['osdsPerDevice'])
         df['service.rook.metadata'] = ','.join(service['desc']['metadata'])
+        df['service.rook.version'] = service['version']
+
+        df['service.rook.desc.mode'] = service['desc'].get('mode')
+        df['service.rook.desc.osdsPerDevice'] = int(
+            service['desc']['osdsPerDevice'])
+        ceph_image = service['desc'].get('cephImage')
+        if ceph_image is not None:
+            df['service.rook.desc.cephImage.user'] = ceph_image.get('user')
+            df['service.rook.desc.cephImage.version'] = ceph_image.get(
+                'version')
+        else:
+            df['service.rook.desc.cephImage.user'] = None
+            df['service.rook.desc.cephImage.version'] = None
 
         benchmark = context['benchmark']['desc']
         df['benchmark.node'] = benchmark['node']
@@ -478,6 +489,52 @@ def visualize():
     df.to_csv(f'./outputs/results/{labels[0]}_{labels[-1]}.csv')
 
     # visualize data
-    # frame = df[df['benchmark.result.rd_name'] == 'rd_rr_4k']
-    # frame.plot(x='label', y='iops')
-    # plt.show()
+    if gui:
+        rd_names = sorted(df['benchmark.result.rd_name'].unique())
+        rbds = sorted(df['benchmark.vdbench.rbds'].unique())
+
+        data = []
+        for index, rd_name in enumerate(rd_names):
+            df_rd = df[df['benchmark.result.rd_name'] == rd_name]
+            for rbd in rbds:
+                df_rbd = df_rd[df_rd['benchmark.vdbench.rbds'] == rbd]
+                data.append(go.Bar(
+                    x=df_rbd['service.rook.desc.osdsPerDevice'],
+                    y=df_rbd['benchmark.result.mb/sec_total'],
+                    name=f'{rbd} rbds',
+                    visible=index == 0,
+                ))
+
+        buttons = []
+        for index, rd_name in enumerate(rd_names):
+            index = index * len(rbds)
+            visible = np.array([False] * len(rd_names) * len(rbds))
+            visible[index: index+len(rbds)] = True
+            buttons.append({
+                'label': rd_name,
+                'method': 'update',
+                'args': [
+                    {
+                        'visible': visible,
+                    },
+                ],
+            })
+
+        layout = {
+            'xaxis': {
+                'title': 'OsdsPerDevice',
+            },
+            'yaxis': {
+                'title': 'MB/s',
+            },
+            'updatemenus': [{
+                'buttons': buttons,
+                'direction': 'down',
+                'showactive': True,
+                'xanchor': 'right',
+                'yanchor': 'top',
+            }],
+        }
+
+        fig = go.Figure(data=data, layout=layout)
+        fig.show()

@@ -6,5 +6,7 @@ sudo pacman -Sy --needed \
     python-numpy \
     python-pandas \
     python-paramiko \
+    python-plotly \
+    python-tenacity \
     python-tqdm \
     python-yaml \
