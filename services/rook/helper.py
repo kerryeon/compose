@@ -492,25 +492,30 @@ def visualize(gui: bool):
     if gui:
         rd_names = sorted(df['benchmark.result.rd_name'].unique())
         rbds = sorted(df['benchmark.vdbench.rbds'].unique())
+        cas_enabled = sorted(df['service.cas.enabled'].unique())
 
         data = []
         for index, rd_name in enumerate(rd_names):
             df_rd = df[df['benchmark.result.rd_name'] == rd_name]
-            for rbd in rbds:
-                df_rbd = df_rd[df_rd['benchmark.vdbench.rbds'] == rbd]
-                data.append(go.Bar(
-                    x=sorted(str(x)
-                             for x in df_rbd['service.rook.desc.osdsPerDevice'].unique()),
-                    y=df_rbd['benchmark.result.mb/sec_total'],
-                    name=f'{rbd} rbds',
-                    visible=index == 0,
-                ))
+            for enabled in cas_enabled:
+                df_cas = df_rd[df_rd['service.cas.enabled'] == enabled]
+                enabled_str = 'Enabled' if enabled else 'Disabled'
+                for rbd in rbds:
+                    df_rbd = df_cas[df_cas['benchmark.vdbench.rbds'] == rbd]
+                    data.append(go.Bar(
+                        x=[str(x) for x in sorted(
+                            df_rbd['service.rook.desc.osdsPerDevice'].unique())],
+                        y=df_rbd['benchmark.result.mb/sec_total'],
+                        name=f'[OpenCAS {enabled_str}] {rbd} rbds',
+                        visible=index == 0,
+                    ))
 
         buttons = []
+        stride = len(rbds) * len(cas_enabled)
         for index, rd_name in enumerate(rd_names):
-            index = index * len(rbds)
-            visible = np.array([False] * len(rd_names) * len(rbds))
-            visible[index: index+len(rbds)] = True
+            index = index * stride
+            visible = np.array([False] * len(rd_names) * stride)
+            visible[index: index+stride] = True
             buttons.append({
                 'label': rd_name,
                 'method': 'update',
