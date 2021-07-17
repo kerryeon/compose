@@ -499,7 +499,8 @@ def visualize(gui: bool):
             for rbd in rbds:
                 df_rbd = df_rd[df_rd['benchmark.vdbench.rbds'] == rbd]
                 data.append(go.Bar(
-                    x=df_rbd['service.rook.desc.osdsPerDevice'],
+                    x=sorted(str(x)
+                             for x in df_rbd['service.rook.desc.osdsPerDevice'].unique()),
                     y=df_rbd['benchmark.result.mb/sec_total'],
                     name=f'{rbd} rbds',
                     visible=index == 0,
