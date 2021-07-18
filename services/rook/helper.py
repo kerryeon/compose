@@ -502,7 +502,7 @@ def visualize(gui: bool):
                 enabled_str = 'Enabled' if enabled else 'Disabled'
                 for rbd in rbds:
                     df_rbd = df_cas[df_cas['benchmark.vdbench.rbds'] == rbd]
-                    data.append(go.Bar(
+                    data.append(go.Scatter(
                         x=[str(x) for x in sorted(
                             df_rbd['service.rook.desc.osdsPerDevice'].unique())],
                         y=df_rbd['benchmark.result.mb/sec_total'],
