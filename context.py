@@ -20,18 +20,20 @@ def import_helper(name: str, attr: str):
 
 
 class Volume:
-    def __init__(self, name: str, type: str):
+    def __init__(self, name: str, type: str, enabled: bool):
         self.name = name
         self.type = type
         self.desc = {}
 
-        self.enabled = True
+        self.enabled = enabled
 
     @classmethod
     def parse(cls, context: dict):
         name = str(context['name'])
         type = str(context['type'])
-        return Volume(name, type)
+        enabled = context.get('enabled')
+        enabled = bool(enabled) if enabled is not None else True
+        return Volume(name, type, enabled)
 
 
 class Node:
