@@ -25,7 +25,7 @@ class Volume:
         self.type = type
         self.desc = {}
 
-        self.usable = True
+        self.enabled = True
 
     @classmethod
     def parse(cls, context: dict):

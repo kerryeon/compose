@@ -26,7 +26,7 @@ def compose(config: Config, service: Service):
         for volume in volumes:
             if volume.name == real_volume:
                 volume.desc['cas'] = cas_volume
-                volume.usable = False
+                volume.enabled = False
                 return
         raise Exception(
             f'Could not find the device: {name} - {real_volume}')
@@ -57,7 +57,7 @@ def compose(config: Config, service: Service):
             content_devices = [
                 volume for type in devices
                 for volume in config.volumes_by_type(name, type)
-                if volume.usable
+                if volume.enabled
             ]
             if not content_devices:
                 config.logger.info(f'Skipping cache: {name}')

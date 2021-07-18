@@ -107,7 +107,7 @@ def modify(config: Config, service: Service):
         num_nodes = 0
         storage.setdefault('nodes', [])
         for node in config.nodes.all():
-            volumes = [v for v in config.nodes.volumes(node) if v.usable]
+            volumes = [v for v in config.nodes.volumes(node) if v.enabled]
             storage_config = {}
             storage_devices = []
 

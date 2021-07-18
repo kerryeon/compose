@@ -39,14 +39,22 @@ class SettingCase:
     def _resolve(cls, target: object, path: str):
         paths, targets = path.split('.'), [target]
         for path in paths:
-            if isinstance(target, context.Services):
+            if isinstance(target, context.Nodes):
+                if path == 'desc':
+                    pass
+                elif hasattr(target, path):
+                    target = getattr(target, path)
+                else:
+                    target = target.data[path]
+            elif isinstance(target, context.Services):
                 target = target.data[path]
             elif isinstance(target, dict):
                 target = target.get(path)
             elif isinstance(target, list):
                 found = False
                 for child in target:
-                    if child['name'] == path:
+                    if hasattr(child, 'name') and child.name == path \
+                            or child['name'] == path:
                         found = True
                         target = child
                         break
