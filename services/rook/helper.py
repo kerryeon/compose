@@ -396,6 +396,18 @@ def visualize(gui: bool):
             df['service.rook.desc.cephImage.user'] = None
             df['service.rook.desc.cephImage.version'] = None
 
+        volumes = {
+            f"{node['name']}_{volumn['name']}": volumn.get('enabled') != False
+            for node in context['nodes']['desc']
+            for volumn in node['volumes']
+        }
+        df['nodes.volumes.enabled'] = ','.join(
+            key for key, value in volumes.items() if value
+        )
+        df['nodes.volumes.disabled'] = ','.join(
+            key for key, value in volumes.items() if not value
+        )
+
         benchmark = context['benchmark']['desc']
         df['benchmark.node'] = benchmark['node']
 
@@ -493,25 +505,31 @@ def visualize(gui: bool):
         rd_names = sorted(df['benchmark.result.rd_name'].unique())
         rbds = sorted(df['benchmark.vdbench.rbds'].unique())
         cas_enabled = sorted(df['service.cas.enabled'].unique())
+        metadatas = sorted(df['service.rook.metadata'].unique())
+        vms_disabled = sorted(df['nodes.volumes.disabled'].unique())
 
         data = []
         for index, rd_name in enumerate(rd_names):
             df_rd = df[df['benchmark.result.rd_name'] == rd_name]
-            for enabled in cas_enabled:
-                df_cas = df_rd[df_rd['service.cas.enabled'] == enabled]
-                enabled_str = 'Enabled' if enabled else 'Disabled'
-                for rbd in rbds:
-                    df_rbd = df_cas[df_cas['benchmark.vdbench.rbds'] == rbd]
-                    data.append(go.Scatter(
-                        x=[str(x) for x in sorted(
-                            df_rbd['service.rook.desc.osdsPerDevice'].unique())],
-                        y=df_rbd['benchmark.result.mb/sec_total'],
-                        name=f'[OpenCAS {enabled_str}] {rbd} rbds',
-                        visible=index == 0,
-                    ))
+            for vm in vms_disabled:
+                df_vm = df_rd[df_rd['nodes.volumes.disabled'] == vm]
+                for md in metadatas:
+                    df_md = df_vm[df_vm['service.rook.metadata'] == md]
+                    for enabled in cas_enabled:
+                        df_cas = df_md[df_md['service.cas.enabled'] == enabled]
+                        enabled_str = 'Enabled' if enabled else 'Disabled'
+                        for rbd in rbds:
+                            df_rbd = df_cas[df_cas['benchmark.vdbench.rbds'] == rbd]
+                            data.append(go.Scatter(
+                                x=[str(x) for x in sorted(
+                                    df_rbd['service.rook.desc.osdsPerDevice'].unique())],
+                                y=df_rbd['benchmark.result.mb/sec_total'],
+                                name=f'[OpenCAS {enabled_str}] {rbd} rbds [{md}] {{{vm}}}',
+                                visible=index == 0,
+                            ))
 
         buttons = []
-        stride = len(rbds) * len(cas_enabled)
+        stride = len(rbds) * len(cas_enabled) * len(metadatas) * len(vms_disabled)
         for index, rd_name in enumerate(rd_names):
             index = index * stride
             visible = np.array([False] * len(rd_names) * stride)
