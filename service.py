@@ -161,4 +161,4 @@ def teardown(config: Config, nodes: list[str]):
 
     for node in nodes:
         config.logger.info(f'Teardown node: {node}')
-        # config.command(node, script)
+        config.command(node, script)
