@@ -152,3 +152,13 @@ def solve(config: Config, init: bool = True, shutdown: bool = True):
     except KeyboardInterrupt:
         print('SIGINT received, terminating...')
         shutdown_cluster(config)
+
+
+def teardown(config: Config, nodes: list[str]):
+    # find the script
+    with open(f'./services/linux/teardown.sh') as f:
+        script = ''.join(f.readlines())
+
+    for node in nodes:
+        config.logger.info(f'Teardown node: {node}')
+        # config.command(node, script)
