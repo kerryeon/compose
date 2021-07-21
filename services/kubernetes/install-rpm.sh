@@ -28,3 +28,7 @@ sudo yum install -y --disableexcludes=kubernetes \
 
 sudo systemctl enable --now systemd-resolved
 sudo systemctl enable --now kubelet
+
+# Sync to UTC time
+sudo timedatectl set-local-rtc 0
+sudo systemctl enable --now chronyd
