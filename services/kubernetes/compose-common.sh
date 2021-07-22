@@ -9,6 +9,7 @@ sudo kubeadm reset -f
 sudo rm -rf /etc/cni/net.d
 sudo ipvsadm --clear
 
+# note: https://github.com/kubernetes/kubernetes/issues/43856#issuecomment-293702078
 for i in $(systemctl list-unit-files --no-legend --no-pager -l | grep --color=never -o -e ".*.slice" | grep kubepod); do
     sudo systemctl stop $i
 done
