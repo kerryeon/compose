@@ -14,7 +14,10 @@ if [ $taint -eq 0 ]; then
 fi
 
 # Apply Network Policy (CNI)
+## CentOS
 kubectl apply -f "https://docs.projectcalico.org/manifests/calico.yaml"
+## ArchLinux
+kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
 
 # Remove RBAC
 kubectl create clusterrolebinding permissive-binding \
