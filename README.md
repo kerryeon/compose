@@ -1,6 +1,6 @@
 # Auto Compose
 
-This project is designed to address to [NetAI, GIST](https://nm.gist.ac.kr/).
+This project is designed to address to [NetAI, GIST](https://netai.smartx.kr/).
 
 ## Usage
 
@@ -19,7 +19,7 @@ This project is designed to address to [NetAI, GIST](https://nm.gist.ac.kr/).
 ### Visualize Tasks
 
 ```bash
-./visualize.py rook
+./visualize.py rook -g
 ```
 
 ## Requirements
