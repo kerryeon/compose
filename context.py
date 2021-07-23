@@ -20,7 +20,7 @@ def import_helper(name: str, attr: str):
 
 
 class Volume:
-    def __init__(self, name: str, type: str, enabled: bool):
+    def __init__(self, name: str, type: str, enabled: bool = True):
         self.name = name
         self.type = type
         self.desc = {}
