@@ -6,7 +6,7 @@ import service
 from context import Config
 
 
-def main(config: str, teardown: list[str]):
+def main(config: str, teardown: list[str], skip_benchmark: bool):
     with open(config) as f:
         context = yaml.load(f, Loader=yaml.SafeLoader)
     config = Config.load(config, context)
@@ -14,7 +14,7 @@ def main(config: str, teardown: list[str]):
     if teardown is not None:
         service.teardown(config, teardown)
     else:
-        service.solve(config)
+        service.solve(config, benchmark=not skip_benchmark)
 
 
 if __name__ == '__main__':
@@ -31,6 +31,10 @@ if __name__ == '__main__':
         '--teardown', metavar='NODE', type=str, nargs='+',
         help='Teardown a node and reboot.',
     )
+    parser.add_argument(
+        '--skip-benchmark', action='store_true',
+        help='Skip the benchmark.',
+    )
     args = parser.parse_args()
 
-    main(args.file, args.teardown)
+    main(args.file, args.teardown, args.skip_benchmark)

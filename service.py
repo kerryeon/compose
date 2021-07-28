@@ -139,14 +139,15 @@ def shutdown_cluster(config: Config, reset: bool = True):
         config.command_all(script)
 
 
-def solve(config: Config, init: bool = True, shutdown: bool = True):
+def solve(config: Config, init: bool = True,
+          shutdown: bool = True, benchmark: bool = True):
     config.planes.primary = select_kubernetes_plane(config)
     ensure_root_permission(config)
     eusure_os_prerequisites(config)
     eusure_dependencies(config)
     try:
         compose_cluster(config, reset=init)
-        if config.benchmark is not None:
+        if benchmark and config.benchmark is not None:
             benchmark_cluster(config)
             shutdown_cluster(config, reset=shutdown)
     except KeyboardInterrupt:
