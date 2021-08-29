@@ -38,12 +38,13 @@ class Volume:
 
 class Node:
     def __init__(self, id: int, name: str,
-                 username: str, password: str,
+                 username: str, password: str, port: int,
                  volumes: list):
         self.id = id
         self.name = name
         self.username = username
         self.password = password
+        self.port = port
         self.volumes = volumes
 
     def node_ip(self, plane: str) -> str:
@@ -58,7 +59,8 @@ class Node:
         client.load_system_host_keys()
         client.connect(self.node_ip(plane),
                        username=self.username,
-                       password=self.password)
+                       password=self.password,
+                       port=self.port)
 
         scripts = [l for l in script.split('\n') if l]
         script_head = f'{scripts[0]} ...' if len(scripts) > 1 else scripts[0]
@@ -97,7 +99,8 @@ class Node:
         client.load_system_host_keys()
         client.connect(self.node_ip(plane),
                        username=self.username,
-                       password=self.password)
+                       password=self.password,
+                       port=self.port)
 
         ftp_client = client.open_sftp()
         for src, dst in files.items():
@@ -111,7 +114,8 @@ class Node:
         client.load_system_host_keys()
         client.connect(self.node_ip(plane),
                        username=self.username,
-                       password=self.password)
+                       password=self.password,
+                       port=self.port)
 
         ftp_client = client.open_sftp()
         for dst, src in files.items():
@@ -126,9 +130,11 @@ class Node:
         name = str(context['name'])
         username = str(context['username'])
         password = context.get('password')
-        password = str(password) if password is not None else password
+        password = str(password) if password is not None else None
+        port = context.get('port')
+        port = int(port) if port is not None else port
         volumes = [Volume.parse(v) for v in context['volumes']]
-        return Node(id, name, username, password, volumes)
+        return Node(id, name, username, password, port, volumes)
 
 
 class NodeMaster:
