@@ -1,4 +1,4 @@
-# Auto Compose
+# SmartX-DataPond
 
 This project is designed to address to [NetAI, GIST](https://netai.smartx.kr/).
 
