@@ -9,4 +9,5 @@ sudo pacman -Sy --needed \
     python-plotly \
     python-tenacity \
     python-tqdm \
-    python-yaml \
+    python-urllib3 \
+    python-yaml

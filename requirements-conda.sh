@@ -11,5 +11,6 @@ conda install \
     plotly \
     tenacity \
     tqdm \
+    urllib3 \
     pyyaml \
     yaml
