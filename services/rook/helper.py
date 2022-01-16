@@ -228,7 +228,11 @@ def compose(config: Config, service: Service):
 
 def shutdown(config: Config, service: Service):
     files = [f'{DESTINATION}/{f.split("/")[-1]}' for f in reversed(FILES)]
-    script = ''
+    script = '' \
+        f'\nkubectl delete -n rook-ceph cephblockpool replicapool --timeout=30s' \
+        f'\nkubectl delete storageclass rook-ceph-block --timeout=30s' \
+        f'\nkubectl -n rook-ceph patch cephcluster rook-ceph --type merge -p \'{"spec":{"cleanupPolicy":{"confirmation":"yes-really-destroy-data"}}}\'' \
+        f'\nkubectl -n rook-ceph delete cephcluster rook-ceph --timeout=30s'
     for file in files:
         script += f'\nkubectl delete -f {file} --timeout=30s'
         script += '\nsleep 1'
@@ -529,7 +533,8 @@ def visualize(gui: bool):
                             ))
 
         buttons = []
-        stride = len(rbds) * len(cas_enabled) * len(metadatas) * len(vms_disabled)
+        stride = len(rbds) * len(cas_enabled) * \
+            len(metadatas) * len(vms_disabled)
         for index, rd_name in enumerate(rd_names):
             index = index * stride
             visible = np.array([False] * len(rd_names) * stride)
