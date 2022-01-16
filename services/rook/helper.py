@@ -227,12 +227,12 @@ def compose(config: Config, service: Service):
 
 
 def shutdown(config: Config, service: Service):
-    files = [f'{DESTINATION}/{f.split("/")[-1]}' for f in reversed(FILES)]
-    script = 'sleep 15'
-    for file in files:
-        script += f'\nkubectl delete -f {file} --timeout=30s'
-        script += '\nsleep 1'
-    config.command_master(script)
+    # files = [f'{DESTINATION}/{f.split("/")[-1]}' for f in reversed(FILES)]
+    # script = 'sleep 15'
+    # for file in files:
+    #     script += f'\nkubectl delete -f {file} --timeout=30s'
+    #     script += '\nsleep 1'
+    # config.command_master(script)
 
     with open(f'./services/kubernetes/shutdown-volumes.sh') as f:
         script = '\n' + ''.join(f.readlines())
@@ -305,6 +305,7 @@ def benchmark(config: Config, benchmark: Benchmark, name: str):
     # shutdown
     config.logger.info(f'Finalizing benchmark: {name}')
     config.command_master(f'kubectl delete -f {DESTINATION}/benchmark.yaml')
+    # config.command_master('kubectl delete pvc --all')
 
 
 def visualize(gui: bool):
