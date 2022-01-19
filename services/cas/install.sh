@@ -2,14 +2,14 @@
 
 # Install dependencies
 sudo apt update -q && sudo apt install -qy \
-    gcc \
-    make \
+    build-essential \
+    libelf-dev \
     wget
 
-# Download
-wget https://github.com/Open-CAS/open-cas-linux/releases/download/v20.12.2/open-cas-linux-20.12.2.0444.release.tar.gz
-tar -xf open-cas-linux-20.12.2.0444.release.tar.gz
-pushd open-cas-linux-20.12.2.0444.release/
+# Download the latest OpenCAS
+git clone https://github.com/Open-CAS/open-cas-linux
+pushd open-cas-linux/
+git submodule update --init
 
 # Build & Install binaries
 ./configure
@@ -18,7 +18,7 @@ sudo make install
 popd
 
 # CleanUp
-rm -rf open-cas-linux-20.12.2.0444.release*
+rm -rf open-cas-linux/
 
 # Verify the installation
 casadm -V
