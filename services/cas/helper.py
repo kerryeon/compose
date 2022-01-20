@@ -107,5 +107,5 @@ def compose(config: Config, service: Service):
 
 def shutdown(config: Config, service: Service):
     config.command_all(
-        'sudo dmsetup remove_all; sudo casctl stop; sudo casctl init -force'
+        'sudo dmsetup remove_all; sudo casctl init --force'
     )
